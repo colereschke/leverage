@@ -155,7 +155,7 @@ maximize  Σ xᵢ · [(1 − w)·pᵢ + w·cᵢ] · (1 + εᵢ)  −  λ · Σ x
 
 - w = ceiling weight (0 for cash, 0–0.5 for GPP).
 - λ = ownership penalty in points per 1% owned. 0.1 traded about 4 projected points (155.1 to
-  150.8) for about 58 points less total ownership on the reference slate.
+  150.8) for about 58 points less total ownership on a prototype slate.
 - ε = optional per-lineup random noise for variety, seeded so builds are reproducible.
 
 The objective is a construction preference, not a measure of tournament value. It doesn't estimate
@@ -357,7 +357,7 @@ ID, falling back to name + team.
 
 | Input / output | Format | Handling |
 | --- | --- | --- |
-| DK salary file (DKSalaries.csv) | Name, ID, Position, Roster Position, Salary, Game Info, TeamAbbrev | Creates players and games; parses kickoff from Game Info (ET → UTC) |
+| DK salary file (DKSalaries.csv) | Name, ID, Position, Roster Position, Salary, Game Info, TeamAbbrev, Status | Creates players and games; parses kickoff from Game Info (ET → UTC); keeps injury status (IR, OUT, Q) |
 | ETR projections | Player, DK Pos, Team, Opp, DK Salary, DK Proj, DK Value, Small Field, Large Field, DK Floor, DK Ceiling, id | Column mapper with saved presets; ownership column chosen per portfolio (small vs large field) |
 | Other projection CSVs | Any headers | Same mapper; required: name, position, team, salary, projection |
 | Projection overrides | JSON or UI | Stored separately; re-applied after a re-import |
@@ -370,8 +370,10 @@ rows are reported, never dropped silently. Import policy:
 
 - **Ambiguous match** (one projection row fits several DK players, or the reverse): the import is
   blocked until you resolve it; the resolution is saved for future imports.
-- **DK player with no projection:** imported but excluded from the pool and listed, unless you add
-  a projection override.
+- **DK player with no projection:** imported but excluded from the pool, unless you add a
+  projection override. The report gives the count and lists by name only those with no injury
+  status and a salary above their position's slate minimum; usually about half the DK file has no
+  projection, mostly injured players and backups.
 - **Projection row matching no DK player:** listed and ignored.
 - **Salary, team or position disagrees with DK:** DK wins and the mismatch is listed; a team
   mismatch also blocks that player until reviewed, since it usually means a bad match.
@@ -442,21 +444,26 @@ more than solver tests.
 - **Validator.** A separate, plain-code checker (no solver) for slot eligibility, salary, roster
   counts, DST conflicts, every rule in the document, exposure and overlap. It runs on every build in
   production and in tests.
-- **Golden slates.** One real slate is the reference fixture (currently the 2026 Week 7 main
-  slate, 273 players, the slate whose files were saved), with expected results: the pure
-  max-projection lineup is 155.1 points at $50,000; the first stacked build with λ = 0.1 is 147.9.
+- **Golden slates.** One real slate is the reference fixture: the 2026 Week 8 main slate (11 games,
+  562 DK players, 305 with ETR projections). Its expected result on real ETR data is the
+  portfolio actually built that week, expressed in `rules.json`.
   Add slates as fixtures over time. Committed fixtures pair the real DK salary file with synthetic
   projections, so ETR projections never reach the repo. The real ETR files stay local
-  (gitignored), and tests that reproduce the 155.1 and 147.9 results run only when those files are
-  present. Aggregate results such as a lineup's total score may be committed; per-player ETR
-  values may not.
+  (gitignored), and tests against them run only when those files are present. Aggregate results
+  such as a lineup's total score may be committed; per-player ETR values may not.
+- **Exact reference check.** Optimality is checked against code that shares nothing with the
+  model and uses no solver: a dynamic program over players by position count and salary in $100
+  steps that finds the max-projection lineup, with a fallback search when that lineup breaks the
+  2-games or DST rule. The optimizer's max-projection lineup must match its score on the synthetic
+  fixture in CI and on real ETR data locally.
 - **Property tests** (Hypothesis): random pools and random rule sets either produce a valid lineup
   or a diagnosis that names conflicting rules, never a silently invalid lineup.
 - **Solver parity.** On models both solvers prove optimal, HiGHS and CP-SAT give the same objective
   value (within 0.01 points after CP-SAT's ×100 scaling). Time-limited runs are excluded, since a
   stopped search returns whatever it found.
 - **Rule compiler tests.** Each rule type gets a minimal pool where the rule is the only thing
-  deciding the answer.
+  deciding the answer, and on pools of about 20 players the optimizer's result is compared with a
+  brute-force enumeration of every lineup that a plain-code check of the rule accepts.
 - **Late swap tests.** Locked players never move; freed salary is used; a late scratch that frees
   salary produces a multi-slot change.
 - **Performance benchmark.** Speed targets (sequential ≤ 1 s per lineup, joint 6-lineup ≤ 30 s on
@@ -473,7 +480,7 @@ The CLI is usable after M1, so you can run real slates as soon as it lands.
 | Phase | Scope | Closed when |
 | --- | --- | --- |
 | M0 Foundations | Solver benchmark spike; domain model; DK + ETR importers with the import policy; independent validator; synthetic reference fixture | In CI: the reference DK salary file imports every row with correct positions, games and kickoffs, the projection importer passes a test for each import-policy case, and the validator accepts and rejects a hand-built set of lineups on the synthetic fixture. Benchmark results recorded in `docs/DECISIONS.md` |
-| M1 Engine + CLI | Lineup model on HiGHS; stack + group rules; sequential portfolios; build outcomes; DK upload export with the pre-export review | In CI: synthetic fixture builds match recorded results. Locally, on real ETR data: max-projection lineup = 155.1 at $50,000, first stacked build with λ = 0.1 = 147.9, and the reference slate's GPP portfolio rebuilt from rules.json |
+| M1 Engine + CLI | Lineup model on HiGHS; stack + group rules; sequential portfolios; build outcomes; DK upload export with the pre-export review | In CI: synthetic fixture builds match recorded results. The max-projection lineup matches the exact reference check (synthetic fixture in CI, real ETR data locally); rule types match brute-force enumeration. Locally: the reference slate's GPP portfolio rebuilt from rules.json |
 | M2 Portfolio + swap | Joint model on CP-SAT; pair and scope rules; correlated exposure; late swap + DK entries; infeasibility report | 6 joint lineups in 30 s on the benchmark job; late-scratch swap test passes |
 | M3 API + web UI | FastAPI, build jobs; owner-only access; React UI, five tabs; phone layout; deploy + build worker | v1: a full Sunday run from a phone, and every route except sign-in rejects anyone but the owner |
 

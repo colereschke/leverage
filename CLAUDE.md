@@ -92,8 +92,8 @@ dependencies; [`docs/tickets.md`](docs/tickets.md) has scope, acceptance criteri
 tests, plus the per-ticket workflow. Pick a Ready ticket, and in its PR update its row and outcome.
 IDs: `FEAT-` (product and engine), `HARD-` (review and audit fixes), `OPS-` (tooling, CI, deploy).
 
-Current milestone: M0 Foundations (`FEAT-001`–`FEAT-006`). The real 155.1 check is an M1 local
-acceptance test.
+Current milestone: M0 Foundations (`FEAT-001`–`FEAT-006`). The real-data checks are M1 local
+acceptance tests.
 
 ## Repo Rules
 

@@ -24,9 +24,10 @@ Numbers are never reused. A ticket keeps its ID if it moves to another milestone
 ## Current snapshot
 
 - Milestone: M0 Foundations. Nothing in M0 has started.
-- Blocker for M0: the reference slate files aren't in place. `DKSalaries.csv` goes in
-  `fixtures/2026-w07-main/` (committed) and the ETR export in `data/2026-w07-main/etr.csv`
-  (gitignored, never committed).
+- Reference slate: 2026 Week 8 main. `fixtures/2026-w08-main/DKSalaries.csv` is committed; the ETR
+  export lives in `data/2026-w08-main/etr.csv` (gitignored, never committed).
+- Still needed from the owner before M1: the rules behind the Week 8 GPP portfolio, for the
+  reference `rules.json`.
 - Open Dependabot PRs: #1 (setup-uv 9 → 10), #2 (uv-build < 0.14).
 
 ## Master ticket table
@@ -38,7 +39,7 @@ builds the foundation they need, so none of its tickets cover one yet.
 | ID | Ticket | Milestone | Status | Depends on | Covers | PRs / commits | Next action |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `OPS-001` | Repo scaffold: uv package, `lev` CLI, quality gate, CI, Dependabot | — | Complete | — | — | `e858fcd` | — |
-| `FEAT-001` | Solver benchmark spike | M0 | Planned | Reference files | — | — | Owner adds the reference slate files |
+| `FEAT-001` | Solver benchmark spike | M0 | Ready | Reference files | — | — | Start |
 | `FEAT-002` | Domain model for slates, players and lineups | M0 | Ready | — | — | — | Start |
 | `FEAT-003` | DK salary file importer | M0 | Planned | `FEAT-002`, reference files | — | — | — |
 | `FEAT-004` | Projection importer with the import policy | M0 | Planned | `FEAT-003`, `FEAT-005` | — | — | — |
@@ -58,8 +59,9 @@ results (especially the M0 benchmark) can change them.
 - **M1 Engine + CLI:** lineup model on HiGHS with the projection/ceiling blend (R15); projection
   overrides (R13); FLEX slot assignment (R11); rule document schema and compiler for stack and
   group rules (R3–R6, R8, R9); sequential portfolios with exposure (R1, R2); build outcomes;
-  projection re-import report; DK upload export with the pre-export review; local acceptance tests
-  on real ETR data (155.1, 147.9, the reference portfolio).
+  projection re-import report; DK upload export with the pre-export review; exact reference check
+  (max-projection DP) and brute-force rule tests; local acceptance test rebuilding the reference
+  portfolio on real ETR data.
 - **M2 Portfolio + swap:** joint model on CP-SAT (R14); pair limits (R7) and allowViolations
   scopes (R10); correlated exposure; late swap + DK entries (R12); infeasibility report.
 - **M3 API + web UI:** saved, diffable build history (R16); the rest per the spec. Expect the first

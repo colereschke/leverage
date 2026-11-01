@@ -90,11 +90,12 @@ datetime is rejected); DK Classic FLEX accepts RB/WR/TE and rejects QB and DST.
 - **Covers:** —
 
 **Scope:** `src/leverage/io/` reads `DKSalaries.csv` into a Slate with Players and Games. Also
-commits the reference slate's salary file to `fixtures/2026-w07-main/DKSalaries.csv`.
+commits the reference slate's salary file to `fixtures/2026-w08-main/DKSalaries.csv`.
 
 **Acceptance criteria:**
 
-- Every row imports, with positions, team, opponent, salary and game correct.
+- Every row imports, with positions, team, opponent, salary, game and injury status (`Status`:
+  blank, Q, OUT, IR) correct.
 - Game Info is parsed into a Game with a UTC kickoff (ET → UTC, DST-aware).
 - DST rows are recognized and normalized.
 - A malformed row fails the import with its row number and reason; nothing is dropped silently.
@@ -122,7 +123,9 @@ mapping file passed to the importer; storing them comes with the Workspace (M1).
   player without a projection is excluded and listed; an unmatched projection row is listed and
   ignored; salary/team/position mismatches keep DK's value and are listed; a team mismatch also
   blocks that player.
-- The import report lists every case above; no row disappears without appearing in it.
+- Unprojected DK players are reported as a count, with names listed only for those with no injury
+  status and a salary above their position's slate minimum.
+- Every row is accounted for in the report (by name or in a count); none disappears silently.
 
 **Required tests:** one test per policy case on small hand-written CSVs; the synthetic reference
 projections import with an empty report. Policy-case tests are part of the M0 gate.
@@ -136,7 +139,7 @@ projections import with an empty report. Policy-case tests are part of the M0 ga
   [`fixtures/README.md`](../fixtures/README.md)
 - **Covers:** —
 
-**Scope:** A seeded generator that creates `fixtures/2026-w07-main/projections.csv` from the DK
+**Scope:** A seeded generator that creates `fixtures/2026-w08-main/projections.csv` from the DK
 salary file alone (salary, position), plus floor, ceiling and two ownership columns, in the ETR
 column layout. The generator and its output are committed. `rules.json` and `expected.json` come
 in M1.
