@@ -158,6 +158,12 @@ maximize  Σ xᵢ · [(1 − w)·pᵢ + w·cᵢ] · (1 + εᵢ)  −  λ · Σ x
   150.8) for about 58 points less total ownership on Week 7.
 - ε = optional per-lineup random noise for variety, seeded so builds are reproducible.
 
+The objective is a construction preference, not a measure of tournament value. It doesn't estimate
+a lineup's chance of hitting a winning score, and a flat ownership penalty doesn't capture the
+popularity of a player combination or the chance of a duplicated lineup. Keep w and λ visible and
+adjustable, show how much projection changing them costs, and never label a lineup "best for this
+contest" just because it maximizes this score.
+
 **Core constraints**
 
 - Exactly 9 players; salary between the minimum used and $50,000.
@@ -227,6 +233,11 @@ This compiles to an indicator variable per lineup in joint mode.
 }
 ```
 
+**Defaults are slate choices.** A bring-back on every stack (`stack_default`), a salary floor and
+avoiding a player with his own DST (`avoid_own_dst`) express one slate's view; they are editable
+rules, not built into the model. The only strategy constraint built in is no offensive player
+facing your DST.
+
 Rules reference players by DraftKings ID, so they survive name changes like "Chris Godwin Jr.". The
 UI shows names.
 
@@ -259,8 +270,23 @@ the build worker size. Targets: joint mode for 6 lineups under 30 s, 20 lineups 
 a time limit that returns the best solution found and its optimality gap. Above 20 lineups, fall
 back to sequential with exposure "debt" carried forward.
 
-**Cash vs GPP.** A portfolio has a contest type. Cash defaults to w = 0, λ = 0, one lineup, no stack
-requirement. GPP defaults to the Week 7 settings: λ = 0.1, QB + 1, minUnique 3.
+**Contest presets.** A portfolio has a contest type, and each type starts from an editable preset:
+
+- **Cash:** w = 0, λ = 0, one lineup, no stack requirement.
+- **Small-field and large-field GPP:** both start from the Week 7 settings (λ = 0.1, QB + 1,
+  minUnique 3) and differ in which ownership column they use; tune λ and uniqueness per contest.
+
+Presets are starting points, not claims that one setting suits every contest. The portfolio shows
+which ownership column it uses.
+
+**Correlated exposure.** Every portfolio build reports QB, primary stack, bring-back and game
+exposure next to player exposure, so you can see when several lineups need the same game to shoot
+out. Controls stay with existing rules (QB exposure via `exposure`, games via `game_presence`); no
+new rule type per stack pattern.
+
+**Fades.** A top-owned player at 0% exposure is flagged (R2), with context: his projected field
+ownership against your portfolio count (0 of N). You either set a minimum or confirm the fade,
+which records it as intentional and stops the flag for that slate.
 
 **Portfolio rule semantics**
 
@@ -352,6 +378,11 @@ Re-importing a newer ETR file (they update Saturday and
 Sunday morning) keeps overrides and rules, and reports which players' projections moved by more
 than 1 point.
 
+**Pre-export review.** Every export (CLI, API and UI) first shows one summary: projection file and
+import timestamps, unresolved player matches, projections that moved since the build, lineup and
+entry counts, entry IDs and locked slots, and the build status. The exported file is checked
+against the reviewed build or swap run before it is written.
+
 **Storage.** Raw files are kept as uploaded, with a hash, so any build can be reproduced exactly.
 
 **ETR data.** Uploading your own ETR projections to your hosted instance is personal use, as with
@@ -395,7 +426,9 @@ multi-user accounts: there is exactly one allowed identity.
 
 **Web UI** (the prototype's five tabs, carried over): Players (pool, lock/ban, projection edits,
 exposure targets), Rules (stack defaults, per-QB presets, group rules in sentence form), Lineups
-(cards, exposure vs field chart, pin, diff between builds), Late swap (lock by kickoff, proposals,
+(cards, exposure vs field chart with correlated exposure, pin, diff between builds, and for a
+selected lineup a few next-best alternatives with projection, ceiling, ownership, salary and stack
+changes side by side), Late swap (lock by kickoff, proposals,
 apply), Data (imports, column mapping). Must work on a phone, since Sunday-morning edits happen there.
 
 ## Testing and validation
@@ -436,8 +469,8 @@ CLI is usable after M1, so you can run real slates from week two.
 | Phase | Scope | Closed when |
 | --- | --- | --- |
 | M0 Foundations | Solver benchmark spike; domain model; DK + ETR importers with the import policy; independent validator; synthetic Week 7 fixture | In CI: the Week 7 DK salary file imports every row with correct positions, games and kickoffs, and the validator accepts and rejects a hand-built set of lineups on the synthetic fixture. Benchmark results recorded in `docs/DECISIONS.md` |
-| M1 Engine + CLI | Lineup model on HiGHS; stack + group rules; sequential portfolios; build outcomes; DK upload export | In CI: synthetic fixture builds match recorded results. Locally, on real ETR data: max-projection lineup = 155.1 at $50,000, first stacked build with λ = 0.1 = 147.9, and the Week 7 portfolio rebuilt from rules.json |
-| M2 Portfolio + swap | Joint model on CP-SAT; pair and scope rules; late swap + DK entries; infeasibility report | 6 joint lineups in 30 s on the benchmark job; Puka-out swap works |
+| M1 Engine + CLI | Lineup model on HiGHS; stack + group rules; sequential portfolios; build outcomes; DK upload export with the pre-export review | In CI: synthetic fixture builds match recorded results. Locally, on real ETR data: max-projection lineup = 155.1 at $50,000, first stacked build with λ = 0.1 = 147.9, and the Week 7 portfolio rebuilt from rules.json |
+| M2 Portfolio + swap | Joint model on CP-SAT; pair and scope rules; correlated exposure; late swap + DK entries; infeasibility report | 6 joint lineups in 30 s on the benchmark job; Puka-out swap works |
 | M3 API + web UI | FastAPI, build jobs; owner-only access; React UI, five tabs; phone layout; deploy + build worker | v1: a full Sunday run from a phone, and every route except sign-in rejects anyone but the owner |
 
 The M0 benchmark is a throwaway script in `bench/` with a rough joint model, built only to choose
@@ -445,6 +478,19 @@ solvers and size the build worker. The production model builders come in M1 and 
 
 After v1: the research agent (v2, below), then contest sims; mount into draftops if that becomes
 the direction.
+
+**Possible later additions** (not prioritized; each needs extra solves or data to validate):
+
+- **Cost of each rule:** projected points lost to a rule, from a re-solve without it. Sims (e.g.
+  The Solver's) cover much of this today.
+- **Best lineup including a faded player**, from a re-solve with him locked.
+- **Several competing portfolio candidates** per build; joint solves take minutes each.
+- Lineup duplication estimates, contest-specific ROI and automatic strategy recommendations.
+
+Workflow references, not evidence their defaults suit Leverage:
+[The Solver optimizer](https://thesolver.com/optimizer) (stack rules, projection edits,
+side-by-side late swap) and [LineupHQ](https://rotogrinders.com/lineuphq) (player, team-stack and
+game-stack exposure views).
 
 ## v2: research agent
 
