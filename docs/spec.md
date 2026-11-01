@@ -70,15 +70,22 @@ Workspace so the original projections are never edited in place.
 | Workspace | slate, active projection source, settings | Your working copy for a slate |
 | PlayerOverride | player, proj, lock, ban, min/max exposure, only-in-stack, source, status | R1, R2, R9, R13 |
 | Rule | type, params, enabled, allowViolations (0 = holds in every lineup), source, status | See Rule system |
-| Build | workspace snapshot hash, mode (sequential / joint), seed, solver, duration | One optimizer run |
+| Build | input snapshot (see below), mode (sequential / joint), seed, solver name + version + settings, status, duration | One optimizer run |
 | Lineup | build, slots[9] → player, salary, proj, ceiling, ownership, tags | Pinned lineups survive rebuilds |
 | Portfolio | name, contest type (cash / GPP), lineups, target size | Week 7 had Cash ×1 and GPP ×6 |
 | SwapRun | portfolio, locked games, results per lineup | Late swap proposals before you apply them |
 
-A Build stores a hash of the exact inputs (projections, overrides, rules, settings), so any lineup
-can be traced back to why it was built. Overrides and rules carry a source (you, or an agent
-proposal with its citation) and a status (proposed / approved); only approved items reach a build.
-This is the hook for the v2 research agent.
+Overrides and rules carry a source (you, or an agent proposal with its citation) and a status
+(proposed / approved); only approved items reach a build. This is the hook for the v2 research
+agent.
+
+**Reproducibility contract.** The Workspace changes over time, so a Build stores its own immutable
+snapshot: references to the exact imported file versions (kept as uploaded, with a hash), the
+approved rule document and overrides as they stood, the roster format, solver name, version and
+settings, and the resulting lineups with their final slot assignments. "Reproducible" means any
+stored build can be re-verified: the validator re-checks its lineups against its snapshot and
+recomputes their scores. It does not promise that re-solving returns identical lineups, which
+parallel CP-SAT search can't guarantee.
 
 ## Architecture
 
@@ -126,6 +133,7 @@ src/leverage/
   api/          # FastAPI app, job runner, persistence (M3)
 web/            # React + TypeScript (Vite), TanStack Query (M3)
 fixtures/       # golden slates: 2026-w07-main/
+bench/          # solver benchmarks (M0 spike, then the benchmark job)
 docs/
 ```
 
@@ -222,7 +230,7 @@ This compiles to an indicator variable per lineup in joint mode.
 Rules reference players by DraftKings ID, so they survive name changes like "Chris Godwin Jr.". The
 UI shows names.
 
-**Diagnostics.** When a build is infeasible, the engine finds a minimal set of conflicting rules
+**Diagnostics.** When a build is infeasible (not merely timed out; see Build outcomes), the engine finds a minimal set of conflicting rules
 with a deletion filter (drop each rule in turn and leave it out only if the build stays infeasible
 without it), then names that set ("Kittle min 50% and pair_limit Kittle+CMC can't both hold").
 
@@ -254,6 +262,38 @@ back to sequential with exposure "debt" carried forward.
 **Cash vs GPP.** A portfolio has a contest type. Cash defaults to w = 0, λ = 0, one lineup, no stack
 requirement. GPP defaults to the Week 7 settings: λ = 0.1, QB + 1, minUnique 3.
 
+**Portfolio rule semantics**
+
+- **Exposure rounding.** Exposure can be set as a count ("2 of 6") or a percentage. Percentages
+  convert to counts for the portfolio size N: min = ⌈min% × N⌉, max = ⌊max% × N⌋. The UI shows the
+  resulting counts. If rounding makes min exceed max, the build is infeasible and the diagnosis
+  names that rule.
+- **Portfolio-level rules** (exposure, pair limits, game presence, DST pool, uniqueness and every
+  allowViolations budget) are constraints across lineups. Joint mode enforces them exactly.
+  Sequential mode honors them greedily: caps count what's already built, a violation budget is spent
+  first-come, and a minimum exposure is forced into the remaining lineups once the remaining count
+  equals the shortfall. Sequential mode can still miss a minimum when other rules block it; the
+  build then ends as targets missed (below), never as a silently valid portfolio.
+- **Pinned lineups** count toward every portfolio rule. If the pins alone break a rule (e.g. pinned
+  lineups already exceed a max exposure), the build is infeasible and the diagnosis names the pins
+  and the rule.
+
+## Build outcomes
+
+Every build ends in exactly one status, shown in the CLI, the API and the UI:
+
+| Status | Meaning | Lineups | Export |
+| --- | --- | --- | --- |
+| optimal | Solver proved the best portfolio for these rules | Yes | Allowed |
+| feasible | Time limit hit with a valid solution; reports the optimality gap | Yes | Allowed |
+| targets_missed | Sequential mode built every lineup but missed named portfolio targets | Yes | Only after you acknowledge the listed misses |
+| infeasible | No portfolio satisfies the rules; includes the conflicting-rule diagnosis | No | — |
+| timed_out | Time limit hit before any valid solution was found | No | — |
+| invalid | The validator rejected a lineup the solver returned (an engine bug) | Kept for debugging | Blocked |
+
+The validator runs on every build that returns lineups, so a status of optimal, feasible or
+targets_missed always means every lineup passed it.
+
 ## Late swap
 
 Late swap re-solves only the unlocked slots of each lineup, with the salary those players free up,
@@ -268,9 +308,12 @@ and shows proposals before anything changes.
 4. Review a diff per lineup (old → new, Δ proj, Δ salary), apply all or one by one. Applied swaps
    export as DK's edited entries file, ready for DK's late-swap upload.
 
-**Rules during late swap.** Exposure, group and pair rules re-apply across the portfolio. Stack
-rules re-apply only if the QB's game is still open; if the QB is locked, his stack minimum is
-checked against the locked pieces and not enforced on the rest.
+**Rules during late swap.** Every rule is evaluated against the whole resulting lineup, with locked
+players as fixed inputs; exposure, group and pair rules re-apply across the portfolio. For stacks
+this is straightforward: a QB's pass catchers and bring-backs play in his game, so they lock at the
+same moment he does. A locked stack is either already satisfied or can't change. If locked players
+already break a rule (e.g. a lineup entered by hand), the swap reports it rather than presenting
+the lineup as valid.
 
 **Planned swaps.** You can store a contingency before lock, like "if Puka is out: Puka → Gibbs and
 LaPorta → Parkinson". At swap time the engine checks it is still valid and the best option, and
@@ -295,7 +338,17 @@ ID, falling back to name + team.
 | Late swap edit file | DK's entries export, edited | v1: import DK's entries export (with Entry IDs), export the edited file for upload |
 
 **Matching and validation.** Names are normalized (suffixes, punctuation, "D/ST" → DST). Unmatched
-rows are reported, never dropped silently. Re-importing a newer ETR file (they update Saturday and
+rows are reported, never dropped silently. Import policy:
+
+- **Ambiguous match** (one projection row fits several DK players, or the reverse): the import is
+  blocked until you resolve it; the resolution is saved for future imports.
+- **DK player with no projection:** imported but excluded from the pool and listed, unless you add
+  a projection override.
+- **Projection row matching no DK player:** listed and ignored.
+- **Salary, team or position disagrees with DK:** DK wins and the mismatch is listed; a team
+  mismatch also blocks that player until reviewed, since it usually means a bad match.
+
+Re-importing a newer ETR file (they update Saturday and
 Sunday morning) keeps overrides and rules, and reports which players' projections moved by more
 than 1 point.
 
@@ -334,6 +387,12 @@ lev export --portfolio gpp --format dk-upload > upload.csv
 | POST | /swaps/{id}/apply | Apply some or all proposals |
 | GET | /portfolios/{id}/export?format=dk | Upload CSV |
 
+**Access.** The hosted instance belongs to one owner. Every route except the sign-in flow requires
+the owner's login, which protects uploads, stored projection and entries files, builds and swap
+application. Discord OAuth restricted to the owner's Discord user ID (as in draftops) is the default;
+an access proxy in front of the app (e.g. Cloudflare Access) is the alternative. This is not
+multi-user accounts: there is exactly one allowed identity.
+
 **Web UI** (the prototype's five tabs, carried over): Players (pool, lock/ban, projection edits,
 exposure targets), Rules (stack defaults, per-QB presets, group rules in sentence form), Lineups
 (cards, exposure vs field chart, pin, diff between builds), Late swap (lock by kickoff, proposals,
@@ -363,8 +422,10 @@ matters more than solver tests.
   deciding the answer.
 - **Late swap tests.** Locked players never move; freed salary is used; a Puka-out case reproduces
   the Week 7 plan.
-- **Performance budget in CI.** Sequential ≤ 1 s per lineup and joint 6-lineup ≤ 30 s on the Week 7
-  fixture; CI fails if it regresses by more than 50%.
+- **Performance benchmark.** Speed targets (sequential ≤ 1 s per lineup, joint 6-lineup ≤ 30 s on
+  the Week 7 fixture) are measured by a separate benchmark job on fixed hardware sized like the
+  build worker, with results recorded per run. Shared CI runners have noisy timing and too few cores
+  for CP-SAT, so regular CI checks correctness only, with generous time limits that catch hangs.
 - **Frontend.** Playwright tests at desktop and 390 px phone width: import, build, late swap, export.
 
 ## Milestones and roadmap
@@ -374,10 +435,13 @@ CLI is usable after M1, so you can run real slates from week two.
 
 | Phase | Scope | Closed when |
 | --- | --- | --- |
-| M0 Foundations | Solver benchmark, CI; domain model, DK + ETR importers; independent validator; Week 7 golden fixture | Max-projection lineup = 155.1 on Week 7 |
-| M1 Engine + CLI | Lineup model on HiGHS; stack + group rules; sequential portfolios; DK upload export | Week 7 portfolio rebuilt from rules.json |
-| M2 Portfolio + swap | Joint model on CP-SAT; pair and scope rules; late swap + DK entries; infeasibility report | 6 joint lineups in 30 s; Puka-out swap works |
-| M3 API + web UI | FastAPI, build jobs; React UI, five tabs; phone layout; deploy + build worker | v1: a full Sunday run from a phone |
+| M0 Foundations | Solver benchmark spike; domain model; DK + ETR importers with the import policy; independent validator; synthetic Week 7 fixture | In CI: the Week 7 DK salary file imports every row with correct positions, games and kickoffs, and the validator accepts and rejects a hand-built set of lineups on the synthetic fixture. Benchmark results recorded in `docs/DECISIONS.md` |
+| M1 Engine + CLI | Lineup model on HiGHS; stack + group rules; sequential portfolios; build outcomes; DK upload export | In CI: synthetic fixture builds match recorded results. Locally, on real ETR data: max-projection lineup = 155.1 at $50,000, first stacked build with λ = 0.1 = 147.9, and the Week 7 portfolio rebuilt from rules.json |
+| M2 Portfolio + swap | Joint model on CP-SAT; pair and scope rules; late swap + DK entries; infeasibility report | 6 joint lineups in 30 s on the benchmark job; Puka-out swap works |
+| M3 API + web UI | FastAPI, build jobs; owner-only access; React UI, five tabs; phone layout; deploy + build worker | v1: a full Sunday run from a phone, and every route except sign-in rejects anyone but the owner |
+
+The M0 benchmark is a throwaway script in `bench/` with a rough joint model, built only to choose
+solvers and size the build worker. The production model builders come in M1 and M2.
 
 After v1: the research agent (v2, below), then contest sims; mount into draftops if that becomes
 the direction.
@@ -401,9 +465,6 @@ v1 prepares for this with the source and status fields on overrides and rules.
 
 **Open questions**
 
-- [ ] Standalone repo, or a module inside draftops? Recommendation: standalone core library first,
-      mount into draftops later if it becomes your fantasy-tools hub and already has auth and a
-      player table.
 - [ ] Typical GPP portfolio size going forward: 6 (as on Week 7) or up to 20? This decides whether
       joint mode is the default.
 
@@ -413,6 +474,8 @@ v1 prepares for this with the source and status fields on overrides and rules.
 - [x] Hosting: v1 is hosted so it works from a phone on Sunday mornings.
 - [x] ETR terms: personal upload to your own instance is fine; ETR data is never made public.
 - [x] Name: Leverage (CLI and short form: `lev`).
+- [x] Standalone repo; integrate with draftops later through the API, if ever. The core library
+      never imports from draftops.
 
 **Risks**
 

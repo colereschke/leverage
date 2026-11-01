@@ -62,6 +62,9 @@ The subpackages are empty stubs until their milestone starts.
 - **Source data is immutable.** Slates are never edited; overrides, rules and builds hang off a
   Workspace. Overrides and rules carry `source` and `status`; only `approved` items reach a build
   (the hook for the v2 research agent).
+- **Every build ends in one status** (optimal, feasible, targets_missed, infeasible, timed_out,
+  invalid), defined in the spec's Build outcomes. Never present a missed target or timeout as a
+  valid portfolio.
 - **Solver split:** HiGHS for single lineups, sequential mode and late swap; CP-SAT for joint
   portfolio builds. Provisional until the M0 benchmark; see `docs/DECISIONS.md`.
 
@@ -83,9 +86,12 @@ The subpackages are empty stubs until their milestone starts.
 
 ## What's Next
 
-M0 Foundations, in order: the solver benchmark (Week 7 joint model at 6 and 20 lineups, HiGHS vs
-CP-SAT, 1/2/8 cores), domain model, DK + ETR importers, independent validator, Week 7 golden
-fixture. M0 closes when the max-projection lineup reproduces 155.1 points at $50,000 on Week 7.
+M0 Foundations, in order: the solver benchmark spike (a throwaway script in `bench/`: Week 7 joint
+model at 6 and 20 lineups, HiGHS vs CP-SAT, 1/2/8 cores; record results in `docs/DECISIONS.md`),
+domain model, DK + ETR importers with the spec's import policy, independent validator, synthetic
+Week 7 fixture. M0 closes in CI when the Week 7 DK salary file imports every row with correct
+positions, games and kickoffs, and the validator accepts and rejects a hand-built set of
+lineups. The real 155.1 check is an M1 local acceptance test.
 
 ## Repo Rules
 
