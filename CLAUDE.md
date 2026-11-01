@@ -5,10 +5,10 @@ portfolio each week. It turns the rules applied by hand on the 2026 Week 7 main 
 engine: QB stacks, conditional group rules, portfolio exposure targets, late swap, and DK export.
 The owner (Cole) has deep Python experience and no Kotlin.
 
-**Source of truth for design:** the
-[Stack Lab Project Spec](https://claude.ai/artifact/CRkK2h2ZZC2HicgBUMPmxB) (a Claude Doc; "Stack
-Lab" was the working name). Read it before planning engine, rule or portfolio work. Its
-requirements R1–R16 each trace to a real Week 7 mistake; keep that traceability in tests.
+**Source of truth for design:** [`docs/spec.md`](docs/spec.md). Read it before planning engine,
+rule or portfolio work, and update it in the same PR when a design changes. Its requirements
+R1–R16 each trace to a real Week 7 mistake; keep that traceability in tests. (It began as the
+"Stack Lab Project Spec" Claude Doc; that copy is no longer maintained.)
 
 ## Quick Commands
 
@@ -46,6 +46,7 @@ src/leverage/
 └── validate.py   # independent validator: plain code, never calls a solver
 tests/            # pytest
 fixtures/         # golden slates, one directory per slate (see fixtures/README.md)
+docs/spec.md      # the design spec: requirements, domain model, engine, roadmap
 docs/DECISIONS.md # why non-obvious choices were made
 ```
 

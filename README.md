@@ -4,9 +4,8 @@ A DraftKings NFL Classic lineup optimizer for one player building a cash lineup 
 portfolio (6–20 entries) each week: QB stacks, conditional group rules, portfolio exposure targets,
 late swap, and DraftKings upload export.
 
-The design lives in the
-[Stack Lab Project Spec](https://claude.ai/artifact/CRkK2h2ZZC2HicgBUMPmxB) (written under the
-working name Stack Lab).
+The design lives in [`docs/spec.md`](docs/spec.md); the reasoning behind key choices is in
+[`docs/DECISIONS.md`](docs/DECISIONS.md).
 
 ## Getting started
 
