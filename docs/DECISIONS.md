@@ -48,7 +48,8 @@ sealed classes. Rejected: no fluency, and only a third-party HiGHS binding.
 
 **Decision:** You upload your own ETR projections to your hosted instance, as with any optimizer.
 ETR data is never made public: committed fixtures pair real DK salary files with synthetic,
-seeded projections. Real ETR files stay in the gitignored `data/` directory, and tests against
+seeded projections. Aggregate results (a lineup's total score, benchmark objectives) may be
+committed; per-player ETR values may not. Real ETR files stay in the gitignored `data/` directory, and tests against
 them skip when the files are absent.
 
 **Why:** ETR projections are paid data. Uploading them to an optimizer is standard personal use;
@@ -70,7 +71,7 @@ portfolio builds, run on a separate build worker with 8+ dedicated cores that sc
 rules and `allowViolations` scopes natively (no big-M) and suits the all-boolean joint model, but
 its speed comes from ~8 parallel workers that small hosting tiers don't provide.
 
-**Alternatives considered:** One solver for everything. Deferred to the M0 benchmark (Week 7 joint
-model at 6 and 20 lineups, both solvers, 1/2/8 cores).
+**Alternatives considered:** One solver for everything. Deferred to the M0 benchmark (joint model on
+the reference slate at 6 and 20 lineups, both solvers, 1/2/8 cores).
 
 **Status:** Flagged for revisit after the M0 benchmark.

@@ -1,13 +1,12 @@
 # Leverage — Claude Context
 
 DraftKings NFL Classic lineup optimizer for one serious player: 1 cash lineup and a 6–20 entry GPP
-portfolio each week. It turns the rules applied by hand on the 2026 Week 7 main slate into a tested
-engine: QB stacks, conditional group rules, portfolio exposure targets, late swap, and DK export.
+portfolio each week. It turns rules usually applied by hand into a tested engine: QB stacks, conditional group rules, portfolio exposure targets, late swap, and DK export.
 The owner (Cole) has deep Python experience and no Kotlin.
 
 **Source of truth for design:** [`docs/spec.md`](docs/spec.md). Read it before planning engine,
 rule or portfolio work, and update it in the same PR when a design changes. Its requirements
-R1–R16 each trace to a real Week 7 mistake; keep that traceability in tests. (It began as the
+R1–R16 each trace to a real hand-building mistake; keep that traceability in tests. (It began as the
 "Stack Lab Project Spec" Claude Doc; that copy is no longer maintained.)
 
 ## Quick Commands
@@ -47,6 +46,8 @@ src/leverage/
 tests/            # pytest
 fixtures/         # golden slates, one directory per slate (see fixtures/README.md)
 docs/spec.md      # the design spec: requirements, domain model, engine, roadmap
+docs/project-timeline.md # ticket tracker: status, dependencies
+docs/tickets.md   # ticket detail: scope, acceptance criteria, required tests
 docs/DECISIONS.md # why non-obvious choices were made
 ```
 
@@ -55,7 +56,7 @@ The subpackages are empty stubs until their milestone starts.
 ## Engine Rules (from the spec)
 
 - **The validator is independent.** It re-checks every lineup before display or export and must not
-  share constraint code with the model builders. Every Week 7 mistake was a rule silently not applied.
+  share constraint code with the model builders. Most mistakes behind R1–R16 were a rule silently not applied.
 - **Rules are data.** A typed, versioned JSON document per workspace, compiled into constraints.
   Players are referenced by DraftKings ID, never by name.
 - **`allowViolations: N`** means a rule may be broken in at most N lineups. 0 (default) = every lineup.
@@ -70,15 +71,15 @@ The subpackages are empty stubs until their milestone starts.
 
 ## Data Rules
 
-- **Never commit ETR projections** (or anything derived from them) — paid data, and this repo may be
-  public. Fixtures use real DK salary files with synthetic, seeded projections. Real ETR files go
+- **Never commit ETR projections** or per-player values derived from them — paid data, and this
+  repo is public. Aggregate results (a lineup's total score, solve times) are fine. Fixtures use real DK salary files with synthetic, seeded projections. Real ETR files go
   in the gitignored `data/`; tests that need them must skip when they're absent.
 
 ## Code Quality Rules
 
 - Type everything; mypy strict must pass. Use `Protocol` for solver interfaces.
 - No unused imports or variables (ruff errors). Do not skip the pre-commit hook with `--no-verify`.
-- Tests that encode a Week 7 requirement name it, e.g. `test_r3_any_of_group_counts_distinct_players`.
+- Tests that encode a requirement name it, e.g. `test_r3_any_of_group_counts_distinct_players`.
 
 ## What's Built
 
@@ -86,12 +87,13 @@ The subpackages are empty stubs until their milestone starts.
 
 ## What's Next
 
-M0 Foundations, in order: the solver benchmark spike (a throwaway script in `bench/`: Week 7 joint
-model at 6 and 20 lineups, HiGHS vs CP-SAT, 1/2/8 cores; record results in `docs/DECISIONS.md`),
-domain model, DK + ETR importers with the spec's import policy, independent validator, synthetic
-Week 7 fixture. M0 closes in CI when the Week 7 DK salary file imports every row with correct
-positions, games and kickoffs, and the validator accepts and rejects a hand-built set of
-lineups. The real 155.1 check is an M1 local acceptance test.
+Work is ticketed. [`docs/project-timeline.md`](docs/project-timeline.md) has status and
+dependencies; [`docs/tickets.md`](docs/tickets.md) has scope, acceptance criteria and required
+tests, plus the per-ticket workflow. Pick a Ready ticket, and in its PR update its row and outcome.
+IDs: `FEAT-` (product and engine), `HARD-` (review and audit fixes), `OPS-` (tooling, CI, deploy).
+
+Current milestone: M0 Foundations (`FEAT-001`–`FEAT-006`). The real 155.1 check is an M1 local
+acceptance test.
 
 ## Repo Rules
 

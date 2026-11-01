@@ -7,18 +7,18 @@ any other file. Why non-obvious choices were made lives in [`DECISIONS.md`](DECI
 ## Overview
 
 Leverage is a DraftKings NFL Classic lineup optimizer for one serious player building 1 cash lineup
-and a small GPP portfolio (6–20 entries) each week. It turns the rules we applied by hand on the
-Week 7 main slate into a tested engine: QB stacks, conditional group rules, portfolio exposure
-targets, and late swap.
+and a small GPP portfolio (6–20 entries) each week. It turns rules that are usually applied by hand
+into a tested engine: QB stacks, conditional group rules, portfolio exposure targets, and late
+swap.
 
-The browser prototype published on Oct 25 (the Stack Lab artifact) proved the model and UI ideas.
+The browser prototype (the Stack Lab artifact) proved the model and UI ideas.
 This spec replaces it with a structured project: a typed core library, a solver layer, an API, a
 web client, and a test suite built from real slates.
 
 **Goals for v1**
 
 - Build valid DraftKings Classic lineups from any projections CSV in under 2 seconds each.
-- Express every rule used on Week 7 declaratively, saved per slate and reusable week to week.
+- Express every rule in the Rule system declaratively, saved per slate and reusable week to week.
 - Optimize a portfolio jointly, hitting exposure targets with overlap limits, not one lineup at a time.
 - Re-optimize open slots after games lock (late swap) using the salary they free.
 - Export the DraftKings bulk-upload CSV and a readable text version.
@@ -31,29 +31,29 @@ web client, and a test suite built from real slates.
   these can follow.
 - Multi-user accounts, payments, or automated lineup submission to DraftKings.
 
-## Requirements from the Week 7 session
+## Requirements
 
-Every requirement below comes from something we did by hand on Oct 25 that took a rebuild, a
-re-run, or a mistake to get right. Tests that cover one name its ID.
+Each requirement comes from something that took a rebuild, a re-run or a mistake to get right when
+building lineups by hand. Tests that cover one name its ID.
 
-| ID  | What happened on Week 7 | Requirement |
+| ID  | What went wrong by hand | Requirement |
 | --- | --- | --- |
-| R1  | Six Love lineups came out of an uncapped run | Per-player and global max exposure, as a % of portfolio size |
-| R2  | Kittle silently drifted to 0 of 6 GPP lineups; Gibbs to 0 | Min exposure per player, plus a warning when a top-owned player is at 0% |
-| R3  | "Higgins or Chase in 2+" was filled with Higgins twice | Group rules count "any of" by default; per-player minimums express "one of each" |
-| R4  | Stroud skinny stack also held Marks and the Texans D | Per-QB stack overrides, plus conditional rules: if Stroud, 0 of Marks / Texans D |
-| R5  | "Max 1 Bucs pass catcher unless the QB is Young" | Conditional rules with "if none of" triggers |
-| R6  | Puka hedge: if Puka, 0 of Mumpfield / Whittington / Atwell | Conditional rules with "if any of" triggers |
-| R7  | LaPorta + Kraft repeated as TE/FLEX in two lineups | Pair limits: a set of players may appear together in at most N lineups |
-| R8  | Chase paired with the Bengals D | Negative correlation rule: a player and his own DST |
-| R9  | Savion added as a one-off, not part of a stack | "Only in stacks" flag: player allowed only when his QB is in the lineup |
-| R10 | G4 had two Bucs bring-backs; you allowed it once | Rule exceptions scoped to N lineups in the portfolio |
-| R11 | Puka in FLEX so Kyren could replace him | Slot assignment puts the latest-kicking eligible player in FLEX |
-| R12 | Puka-out swap needed multiple players, not a straight swap | Late swap re-optimizes every unlocked slot with freed salary |
-| R13 | ETR docked Puka to 19, bumped Higbee to 10.8 | Projection overrides per player, saved with the slate |
-| R14 | Joint rebuild of G3–G6 beat one-at-a-time swaps by ~4 points | Joint portfolio optimization mode |
-| R15 | Ceiling review found one real upgrade | Objective blends projection and ceiling; report both per lineup |
-| R16 | Six versions of the lineups printed in chat | Lineup history: every build saved, diffable, with "what changed" |
+| R1  | An uncapped run put the same player in every lineup | Per-player and global max exposure, as a % of portfolio size |
+| R2  | Two core players silently drifted to 0 lineups | Min exposure per player, plus a warning when a top-owned player is at 0% |
+| R3  | "Player A or B in 2+ lineups" was filled with A twice | Group rules count "any of" by default; per-player minimums express "one of each" |
+| R4  | A skinny QB stack still held a teammate and the team's own DST | Per-QB stack overrides, plus conditional rules: if this QB, 0 of these players |
+| R5  | "Max 1 pass catcher from a team unless its QB is used" | Conditional rules with "if none of" triggers |
+| R6  | A hedge: if this player, none of his teammates A, B, C | Conditional rules with "if any of" triggers |
+| R7  | The same two TEs repeated as TE/FLEX in two lineups | Pair limits: a set of players may appear together in at most N lineups |
+| R8  | A WR paired with his own team's DST | Negative correlation rule: a player and his own DST |
+| R9  | A player added as a one-off, not part of a stack | "Only in stacks" flag: player allowed only when his QB is in the lineup |
+| R10 | A rule meant to be broken once (two bring-backs) could only hold everywhere or nowhere | Rule exceptions scoped to N lineups in the portfolio |
+| R11 | A player had to sit in FLEX so a later player could replace him | Slot assignment puts the latest-kicking eligible player in FLEX |
+| R12 | A late scratch needed several players changed, not a straight swap | Late swap re-optimizes every unlocked slot with freed salary |
+| R13 | The projection source cut one player and bumped another late | Projection overrides per player, saved with the slate |
+| R14 | Rebuilding several lineups together beat one-at-a-time swaps by ~4 points | Joint portfolio optimization mode |
+| R15 | A ceiling review found an upgrade the projection-only score missed | Objective blends projection and ceiling; report both per lineup |
+| R16 | Several versions of the lineups with no record of what changed | Lineup history: every build saved, diffable, with "what changed" |
 
 ## Domain model
 
@@ -63,7 +63,7 @@ Workspace so the original projections are never edited in place.
 | Entity | Key fields | Notes |
 | --- | --- | --- |
 | Site / RosterFormat | slots, eligibility per slot, salary cap | DraftKings Classic = QB, RB×2, WR×3, TE, FLEX (RB/WR/TE), DST; $50,000. Data, not code |
-| Slate | id, site, format, week, games, created from which files | One per contest slate (e.g. 2026 W7 Main) |
+| Slate | id, site, format, week, games, created from which files | One per contest slate (e.g. a week's Main slate) |
 | Game | id, away team, home team, kickoff (UTC) | Drives late swap and FLEX placement |
 | Player | dk_id, name, position(s), team, opponent, game, salary | From the DK salary file; dk_id is the stable key |
 | Projection | player, source (ETR), proj, floor, ceiling, ownership by field size, imported_at | Several sources per slate allowed; one is active |
@@ -72,7 +72,7 @@ Workspace so the original projections are never edited in place.
 | Rule | type, params, enabled, allowViolations (0 = holds in every lineup), source, status | See Rule system |
 | Build | input snapshot (see below), mode (sequential / joint), seed, solver name + version + settings, status, duration | One optimizer run |
 | Lineup | build, slots[9] → player, salary, proj, ceiling, ownership, tags | Pinned lineups survive rebuilds |
-| Portfolio | name, contest type (cash / GPP), lineups, target size | Week 7 had Cash ×1 and GPP ×6 |
+| Portfolio | name, contest type (cash / GPP), lineups, target size | e.g. Cash ×1 and GPP ×6 |
 | SwapRun | portfolio, locked games, results per lineup | Late swap proposals before you apply them |
 
 Overrides and rules carry a source (you, or an agent proposal with its citation) and a status
@@ -132,7 +132,7 @@ src/leverage/
   validate.py   # independent checker
   api/          # FastAPI app, job runner, persistence (M3)
 web/            # React + TypeScript (Vite), TanStack Query (M3)
-fixtures/       # golden slates: 2026-w07-main/
+fixtures/       # golden slates, one directory per slate
 bench/          # solver benchmarks (M0 spike, then the benchmark job)
 docs/
 ```
@@ -144,8 +144,8 @@ pytest + Hypothesis; GitHub Actions CI; Docker image for deployment.
 ## Optimizer engine
 
 Each lineup is a 0/1 integer program: one binary variable per player, maximize the score, subject
-to roster, salary and rule constraints. This is the same model used for every Week 7 build, and it
-solved in 0.1–0.6 s per lineup on a 273-player slate.
+to roster, salary and rule constraints. In the prototype it solved in 0.1–0.6 s per lineup on a
+273-player slate.
 
 **Objective.** For player i with projection p, ceiling c and ownership o:
 
@@ -155,7 +155,7 @@ maximize  Σ xᵢ · [(1 − w)·pᵢ + w·cᵢ] · (1 + εᵢ)  −  λ · Σ x
 
 - w = ceiling weight (0 for cash, 0–0.5 for GPP).
 - λ = ownership penalty in points per 1% owned. 0.1 traded about 4 projected points (155.1 to
-  150.8) for about 58 points less total ownership on Week 7.
+  150.8) for about 58 points less total ownership on the reference slate.
 - ε = optional per-lineup random noise for variety, seeded so builds are reproducible.
 
 The objective is a construction preference, not a measure of tournament value. It doesn't estimate
@@ -167,6 +167,7 @@ contest" just because it maximizes this score.
 **Core constraints**
 
 - Exactly 9 players; salary between the minimum used and $50,000.
+- Players from at least 2 different games (a DraftKings rule).
 - Position counts from the RosterFormat: 1 QB, 2–3 RB, 3–4 WR, 1–2 TE, 1 DST, and RB+WR+TE = 7.
 - Locks = 1, bans = 0.
 - No offensive player facing your DST: for each DST d, the count of opposing offense ≤ 9 × (1 − x_d).
@@ -197,7 +198,7 @@ offline or demo mode.
 Rules are data: a typed, versioned JSON document per workspace that the engine compiles into
 constraints. You write them in the UI or by hand; the same file drives the CLI, the API and tests.
 
-| Rule type | Parameters | Week 7 example |
+| Rule type | Parameters | Example |
 | --- | --- | --- |
 | stack_default | minPass, maxPass, bbMin, bbMax, positions | QB + 1 pass catcher, 1 bring-back |
 | stack_qb | qb, same params | Stroud: exactly 1 pass catcher, 0 bring-back |
@@ -250,21 +251,22 @@ without it), then names that set ("Kittle min 50% and pair_limit Kittle+CMC can'
 The engine supports two build modes; joint is the planned default for GPP portfolios of 20 or fewer
 lineups, pending the solver benchmark below.
 
-| Mode | How it works | Strengths | Weaknesses | Week 7 evidence |
+| Mode | How it works | Strengths | Weaknesses | Prototype evidence |
 | --- | --- | --- | --- | --- |
 | Sequential | Solve lineup k with lineups 1..k−1 fixed: exposure caps count what's built, uniqueness bans repeats | Fast (≤ 1 s per lineup), scales to 150 | Greedy: early lineups take the best players, later ones get leftovers; min exposure is hard to hit | 6 lineups in 0.6 s; Kittle drifted to 0 |
-| Joint | One model with N × players variables; exposure, pair limits and overlap are constraints across lineups | Hits exposure targets exactly; best total score | Model grows with N² overlap terms; up to a few minutes for 4 lineups in the Week 7 prototype (PuLP + CBC) | +4 total points over one-at-a-time swaps, every target met |
+| Joint | One model with N × players variables; exposure, pair limits and overlap are constraints across lineups | Hits exposure targets exactly; best total score | Model grows with N² overlap terms; up to a few minutes for 4 lineups in the prototype (PuLP + CBC) | +4 total points over one-at-a-time swaps, every target met |
 
 **Joint model additions**
 
 - Exposure: for each player, min ≤ Σ over lineups x ≤ max (counts, from % × N).
 - Overlap: for each lineup pair, shared players ≤ 9 − minUnique, using a product variable per
-  player (as on Week 7) or, cheaper, a symmetry-breaking order plus pairwise cuts added lazily.
+  player (as in the prototype) or, cheaper, a symmetry-breaking order plus pairwise cuts added lazily.
 - Fixed lineups: pinned lineups enter as constants, so you can rebuild G3–G6 around a fixed G1–G2.
 - Objective: sum of lineup scores; optional diversity bonus to avoid near-duplicate stacks.
 
-**Performance target.** These targets are unverified: Week 7's only data point is a few minutes for
-4 lineups on PuLP + CBC. The first M0 task is a benchmark of the Week 7 joint model at 6 and 20
+**Performance target.** These targets are unverified: the prototype's only data point is a few
+minutes for 4 lineups on PuLP + CBC. The first M0 task is a benchmark of the joint model on the
+reference slate at 6 and 20
 lineups, on HiGHS and CP-SAT, at 1, 2 and 8 cores; it sets the default mode, the solver split and
 the build worker size. Targets: joint mode for 6 lineups under 30 s, 20 lineups under 3 min, with
 a time limit that returns the best solution found and its optimality gap. Above 20 lineups, fall
@@ -273,8 +275,8 @@ back to sequential with exposure "debt" carried forward.
 **Contest presets.** A portfolio has a contest type, and each type starts from an editable preset:
 
 - **Cash:** w = 0, λ = 0, one lineup, no stack requirement.
-- **Small-field and large-field GPP:** both start from the Week 7 settings (λ = 0.1, QB + 1,
-  minUnique 3) and differ in which ownership column they use; tune λ and uniqueness per contest.
+- **Small-field and large-field GPP:** both start from λ = 0.1, QB + 1 and
+  minUnique 3, and differ in which ownership column they use; tune λ and uniqueness per contest.
 
 Presets are starting points, not claims that one setting suits every contest. The portfolio shows
 which ownership column it uses.
@@ -396,8 +398,8 @@ HTTP API, then the web UI on top of the API.
 **CLI**
 
 ```
-lev slate import --salaries DKSalaries.csv --projections etr_w7.csv
-lev build --slate 2026-w7-main --rules rules.json --portfolio gpp --n 6 --mode joint
+lev slate import --salaries DKSalaries.csv --projections etr.csv
+lev build --slate 2026-w09-main --rules rules.json --portfolio gpp --n 6 --mode joint
 lev exposure --portfolio gpp
 lev swap --portfolio gpp --lock-through 13:00 --ban "Puka Nacua"
 lev export --portfolio gpp --format dk-upload > upload.csv
@@ -434,18 +436,20 @@ apply), Data (imports, column mapping). Must work on a phone, since Sunday-morni
 ## Testing and validation
 
 Every lineup the engine returns is re-checked by an independent validator before it's shown or
-exported. On Week 7, each mistake we caught was a rule silently not applied, so the validator
-matters more than solver tests.
+exported. Most mistakes behind R1–R16 were a rule silently not applied, so the validator matters
+more than solver tests.
 
 - **Validator.** A separate, plain-code checker (no solver) for slot eligibility, salary, roster
   counts, DST conflicts, every rule in the document, exposure and overlap. It runs on every build in
   production and in tests.
-- **Golden slates.** The Week 7 main slate (273 players) is fixture #1, with expected results: the
-  pure max-projection lineup is 155.1 points at $50,000; the first stacked build with λ = 0.1 is
-  147.9. Add one slate per week as fixtures. Committed fixtures pair the real DK salary file with
-  synthetic projections, so ETR data never reaches the repo. The real ETR files stay local
+- **Golden slates.** One real slate is the reference fixture (currently the 2026 Week 7 main
+  slate, 273 players, the slate whose files were saved), with expected results: the pure
+  max-projection lineup is 155.1 points at $50,000; the first stacked build with λ = 0.1 is 147.9.
+  Add slates as fixtures over time. Committed fixtures pair the real DK salary file with synthetic
+  projections, so ETR projections never reach the repo. The real ETR files stay local
   (gitignored), and tests that reproduce the 155.1 and 147.9 results run only when those files are
-  present.
+  present. Aggregate results such as a lineup's total score may be committed; per-player ETR
+  values may not.
 - **Property tests** (Hypothesis): random pools and random rule sets either produce a valid lineup
   or a diagnosis that names conflicting rules, never a silently invalid lineup.
 - **Solver parity.** On models both solvers prove optimal, HiGHS and CP-SAT give the same objective
@@ -453,25 +457,28 @@ matters more than solver tests.
   stopped search returns whatever it found.
 - **Rule compiler tests.** Each rule type gets a minimal pool where the rule is the only thing
   deciding the answer.
-- **Late swap tests.** Locked players never move; freed salary is used; a Puka-out case reproduces
-  the Week 7 plan.
+- **Late swap tests.** Locked players never move; freed salary is used; a late scratch that frees
+  salary produces a multi-slot change.
 - **Performance benchmark.** Speed targets (sequential ≤ 1 s per lineup, joint 6-lineup ≤ 30 s on
-  the Week 7 fixture) are measured by a separate benchmark job on fixed hardware sized like the
+  the reference fixture) are measured by a separate benchmark job on fixed hardware sized like the
   build worker, with results recorded per run. Shared CI runners have noisy timing and too few cores
   for CP-SAT, so regular CI checks correctness only, with generous time limits that catch hangs.
 - **Frontend.** Playwright tests at desktop and 390 px phone width: import, build, late swap, export.
 
 ## Milestones and roadmap
 
-v1 is four phases, and each ends with a pass/fail test on the Week 7 slate rather than a date. The
-CLI is usable after M1, so you can run real slates from week two.
+v1 is four phases, and each ends with a pass/fail test on the reference slate rather than a date.
+The CLI is usable after M1, so you can run real slates as soon as it lands.
 
 | Phase | Scope | Closed when |
 | --- | --- | --- |
-| M0 Foundations | Solver benchmark spike; domain model; DK + ETR importers with the import policy; independent validator; synthetic Week 7 fixture | In CI: the Week 7 DK salary file imports every row with correct positions, games and kickoffs, and the validator accepts and rejects a hand-built set of lineups on the synthetic fixture. Benchmark results recorded in `docs/DECISIONS.md` |
-| M1 Engine + CLI | Lineup model on HiGHS; stack + group rules; sequential portfolios; build outcomes; DK upload export with the pre-export review | In CI: synthetic fixture builds match recorded results. Locally, on real ETR data: max-projection lineup = 155.1 at $50,000, first stacked build with λ = 0.1 = 147.9, and the Week 7 portfolio rebuilt from rules.json |
-| M2 Portfolio + swap | Joint model on CP-SAT; pair and scope rules; correlated exposure; late swap + DK entries; infeasibility report | 6 joint lineups in 30 s on the benchmark job; Puka-out swap works |
+| M0 Foundations | Solver benchmark spike; domain model; DK + ETR importers with the import policy; independent validator; synthetic reference fixture | In CI: the reference DK salary file imports every row with correct positions, games and kickoffs, the projection importer passes a test for each import-policy case, and the validator accepts and rejects a hand-built set of lineups on the synthetic fixture. Benchmark results recorded in `docs/DECISIONS.md` |
+| M1 Engine + CLI | Lineup model on HiGHS; stack + group rules; sequential portfolios; build outcomes; DK upload export with the pre-export review | In CI: synthetic fixture builds match recorded results. Locally, on real ETR data: max-projection lineup = 155.1 at $50,000, first stacked build with λ = 0.1 = 147.9, and the reference slate's GPP portfolio rebuilt from rules.json |
+| M2 Portfolio + swap | Joint model on CP-SAT; pair and scope rules; correlated exposure; late swap + DK entries; infeasibility report | 6 joint lineups in 30 s on the benchmark job; late-scratch swap test passes |
 | M3 API + web UI | FastAPI, build jobs; owner-only access; React UI, five tabs; phone layout; deploy + build worker | v1: a full Sunday run from a phone, and every route except sign-in rejects anyone but the owner |
+
+Ticket status lives in [`project-timeline.md`](project-timeline.md) and ticket detail in
+[`tickets.md`](tickets.md).
 
 The M0 benchmark is a throwaway script in `bench/` with a rough joint model, built only to choose
 solvers and size the build worker. The production model builders come in M1 and M2.
@@ -511,7 +518,7 @@ v1 prepares for this with the source and status fields on overrides and rules.
 
 **Open questions**
 
-- [ ] Typical GPP portfolio size going forward: 6 (as on Week 7) or up to 20? This decides whether
+- [ ] Typical GPP portfolio size going forward: 6 or up to 20? This decides whether
       joint mode is the default.
 
 **Decided** (reasoning in [`DECISIONS.md`](DECISIONS.md))

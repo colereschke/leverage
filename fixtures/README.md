@@ -11,10 +11,11 @@ Real slates used as regression fixtures. Each slate gets its own directory, name
   expected.json      # results the engine must reproduce on these inputs
 ```
 
-Week 7 (273 players) is fixture #1. Add one slate per week.
+The reference slate is `2026-w07-main/` (273 players), the first slate with saved files. Add
+slates over time.
 
 **ETR projections never go in this directory.** They are paid data and this repo may be public.
 The real ETR files live in the gitignored `data/` directory, e.g.
-`data/2026-w07-main/etr.csv`. The M1 acceptance tests that reproduce real Week 7 results
+`data/2026-w07-main/etr.csv`. The M1 acceptance tests that reproduce real results on the reference slate
 (max-projection lineup = 155.1 at $50,000; first stacked build with λ = 0.1 = 147.9) skip when that
 file is absent, so they run locally but not in CI.
