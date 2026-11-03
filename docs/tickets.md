@@ -81,7 +81,8 @@ Workspace, PlayerOverride, Rule, Build and SwapRun wait for M1, when something u
 **Required tests:** construction and validation errors for each model (e.g. a naive kickoff
 datetime is rejected); DK Classic FLEX accepts RB/WR/TE and rejects QB and DST.
 
-**Outcome:**
+**Outcome:** [Draft PR #4](https://github.com/colereschke/leverage/pull/4) — shipped immutable
+Pydantic domain models, DK Classic roster data, and validation tests.
 
 ### FEAT-003 - DK salary file importer
 
