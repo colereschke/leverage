@@ -62,16 +62,41 @@ projections are still ETR's numbers, and heavy noise is no better than synthetic
 
 ## Optimizer
 
-### HiGHS for single lineups, CP-SAT for joint portfolios (spec, 2026-11-01)
+### HiGHS for single lineups, CP-SAT for joint portfolios (FEAT-001, 2026-11-03)
 
 **Decision:** HiGHS for single lineups, sequential builds and late swap; OR-Tools CP-SAT for joint
-portfolio builds, run on a separate build worker with 8+ dedicated cores that scales to zero.
+portfolio builds, run on a separate build worker with 8 dedicated cores that scales to zero.
 
-**Why:** HiGHS is fast on one core and deterministic single-threaded. CP-SAT expresses conditional
-rules and `allowViolations` scopes natively (no big-M) and suits the all-boolean joint model, but
-its speed comes from ~8 parallel workers that small hosting tiers don't provide.
+**Why:** HiGHS is fast on one core. CP-SAT expresses conditional rules and `allowViolations` scopes
+natively (no big-M). The M0 spike found that CP-SAT needs 8 workers for this joint model: at 20
+lineups it found a stronger feasible portfolio than HiGHS within 180 seconds, while its 1- and
+2-worker results were weaker. A small web server cannot supply 8 dedicated cores.
 
-**Alternatives considered:** One solver for everything. Deferred to the M0 benchmark (joint model on
-the reference slate at 6 and 20 lineups, both solvers, 1/2/8 cores).
+The spike used the private 2026 Week 8 main-slate ETR file joined by DK ID to the committed salary
+file. Both solvers used the same top-projection pool (12 QB, 40 RB, 70 WR, 30 TE, 16 DST), integer
+projections scaled by 100, 9-player roster and position counts, $50,000 cap, at least 2 games,
+at most 4 offensive players per team, QB + pass-catcher and bring-back minimums, no opposing
+offense against DST, and at most 7 shared players per lineup pair. These are aggregate totals;
+no per-player ETR values are recorded. Runs were sequential on an AMD Ryzen 7 7800X3D (8 physical
+cores, 16 threads), HiGHS 1.15.1 and OR-Tools 9.15.6755. Time is solver time only; model
+construction was excluded. One run per case, with no optimality proofs.
 
-**Status:** Flagged for revisit after the M0 benchmark.
+| Lineups | Cores | HiGHS seconds | HiGHS objective | HiGHS gap | CP-SAT seconds | CP-SAT objective | CP-SAT gap |
+| --- | ---: | ---: | ---: | ---: | ---: | ---: | ---: |
+| 6 | 1 | 30.01 | 877.0 | 0.26% | 30.00 | 815.1 | 9.53% |
+| 6 | 2 | 30.01 | 876.9 | 0.25% | 30.00 | 851.0 | 4.91% |
+| 6 | 8 | 30.01 | 877.0 | 0.32% | 30.01 | 877.0 | 0.27% |
+| 20 | 1 | 180.04 | 2885.0 | 1.65% | 180.01 | 2433.6 | 22.29% |
+| 20 | 2 | 180.03 | 2877.1 | 1.91% | 180.03 | 2786.1 | 6.82% |
+| 20 | 8 | 180.01 | 2882.7 | 1.70% | 180.28 | 2901.9 | 1.39% |
+
+All 12 runs ended with a feasible portfolio and no proof of optimality. The script is
+`bench/solver_spike.py`; rerun with `uv run --group bench python bench/solver_spike.py` when the
+private ETR file is present. The result supports 8 cores for the joint build worker, but the
+unproven gaps and single-run timings do not establish a reliable production latency guarantee.
+
+**Alternatives considered:** HiGHS for joint portfolios too. It was stronger with 1 or 2 workers,
+but CP-SAT was stronger at 20 lineups with 8 workers; keep HiGHS for single lineups and sequential
+builds. Revisit if production model rules or hosting costs change the comparison.
+
+**Status:** Active, provisional until the M2 production model benchmark.

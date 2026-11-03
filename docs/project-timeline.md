@@ -39,7 +39,7 @@ builds the foundation they need, so none of its tickets cover one yet.
 | ID | Ticket | Milestone | Status | Depends on | Covers | PRs / commits | Next action |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | `OPS-001` | Repo scaffold: uv package, `lev` CLI, quality gate, CI, Dependabot | — | Complete | — | — | `e858fcd` | — |
-| `FEAT-001` | Solver benchmark spike | M0 | Ready | Reference files | — | — | Start |
+| `FEAT-001` | Solver benchmark spike | M0 | In progress | Reference files | — | — | `feat-001-solver-benchmark` |
 | `FEAT-002` | Domain model for slates, players and lineups | M0 | Ready | — | — | — | Start |
 | `FEAT-003` | DK salary file importer | M0 | Planned | `FEAT-002`, reference files | — | — | — |
 | `FEAT-004` | Projection importer with the import policy | M0 | Planned | `FEAT-003`, `FEAT-005` | — | — | — |
