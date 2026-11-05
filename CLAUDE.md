@@ -84,6 +84,7 @@ The subpackages are empty stubs until their milestone starts.
 ## What's Built
 
 - Repo scaffold: uv package, `lev --version`, quality gate, pre-commit hook, CI, Dependabot.
+- DK salary importer: `leverage.io.dk_salaries.read_dk_salaries` builds a Slate from `DKSalaries.csv`.
 
 ## What's Next
 
