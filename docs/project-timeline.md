@@ -23,7 +23,7 @@ Numbers are never reused. A ticket keeps its ID if it moves to another milestone
 
 ## Current snapshot
 
-- Milestone: M0 Foundations. FEAT-001 through FEAT-005 are complete; FEAT-006 is ready.
+- Milestone: M0 Foundations. FEAT-001 through FEAT-005 are complete; FEAT-006 is in review.
 - Reference slate: 2026 Week 8 main. `fixtures/2026-w08-main/DKSalaries.csv` is committed; the ETR
   export lives in `data/2026-w08-main/etr.csv` (gitignored, never committed).
 - Still needed from the owner before M1: the rules behind the Week 8 GPP portfolio, for the
@@ -44,7 +44,7 @@ builds the foundation they need, so none of its tickets cover one yet.
 | `FEAT-003` | DK salary file importer | M0 | Complete | `FEAT-002`, reference files | — | [#5](https://github.com/colereschke/leverage/pull/5) | — |
 | `FEAT-004` | Projection importer with the import policy | M0 | Complete | `FEAT-003`, `FEAT-005` | — | [#7](https://github.com/colereschke/leverage/pull/7) | — |
 | `FEAT-005` | Synthetic reference fixture | M0 | Complete | `FEAT-003` | — | [#6](https://github.com/colereschke/leverage/pull/6) | — |
-| `FEAT-006` | Independent lineup validator | M0 | Ready | `FEAT-002`, `FEAT-005` | — | — | — |
+| `FEAT-006` | Independent lineup validator | M0 | In progress | `FEAT-002`, `FEAT-005` | — | [#8](https://github.com/colereschke/leverage/pull/8) | Review draft PR |
 
 ## M0 gate
 

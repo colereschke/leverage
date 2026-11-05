@@ -88,6 +88,9 @@ The subpackages are empty stubs until their milestone starts.
 
 - Repo scaffold: uv package, `lev --version`, quality gate, pre-commit hook, CI, Dependabot.
 - DK salary importer: `leverage.io.dk_salaries.read_dk_salaries` builds a Slate from `DKSalaries.csv`.
+- Projection importer: `leverage.io.projections.import_projections` applies the import policy to a projection file.
+- Synthetic reference fixture: `scripts/generate_synthetic_projections.py` writes the seeded `fixtures/2026-w08-main/projections.csv`.
+- Independent validator: `leverage.validate.validate_lineup` returns every core-constraint violation for a lineup on a Slate.
 
 ## What's Next
 
