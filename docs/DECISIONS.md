@@ -100,3 +100,21 @@ but CP-SAT was stronger at 20 lineups with 8 workers; keep HiGHS for single line
 builds. Revisit if production model rules or hosting costs change the comparison.
 
 **Status:** Active, provisional until the M2 production model benchmark.
+
+## Data import
+
+### Projection import keeps ETR's values and fails loudly (FEAT-004, 2026-11-04)
+
+**Decision:** `Projection.floor` may be negative. ETR's `LA` is aliased to DK's `LAR`. An ambiguous
+match raises `AmbiguousMatchError` carrying the report, rather than returning a flagged result.
+Ownership is keyed by the field size names `small` and `large`, not by entry count.
+**Why:** The Week 8 ETR file has 8 negative DST floors, which are real values, and 14 Rams rows
+that the team-mismatch policy would otherwise block every week. Raising means a caller can't
+reach a build by ignoring a report field. ETR publishes two named columns with no contest sizes,
+and a portfolio only ever picks one of them.
+**Alternatives considered:** Clamping floors to 0 alters source data. A global list of team
+aliases was skipped: only `LA` has been seen, and any other difference shows up in the report.
+Integer entry counts as ownership keys would be invented numbers that look real. Row numbers as
+resolution keys would silently match the wrong player when a re-issued file shifts its rows, so
+resolutions key on name, team, position and salary.
+**Status:** Active

@@ -18,7 +18,7 @@ from pydantic import (
 Position = Literal["QB", "RB", "WR", "TE", "DST"]
 ContestType = Literal["cash", "gpp"]
 NonEmptyStr = Annotated[str, Field(min_length=1)]
-FieldSize = Annotated[int, Field(gt=0)]
+FieldSize = Literal["small", "large"]
 OwnershipPercent = Annotated[float, Field(ge=0, le=100, allow_inf_nan=False)]
 
 
@@ -112,7 +112,7 @@ class Projection(DomainModel):
     player_id: NonEmptyStr
     source: NonEmptyStr
     proj: float = Field(ge=0, allow_inf_nan=False)
-    floor: float = Field(ge=0, allow_inf_nan=False)
+    floor: float = Field(allow_inf_nan=False)  # DST floors are legitimately negative
     ceiling: float = Field(ge=0, allow_inf_nan=False)
     imported_at: AwareDatetime
     ownership_by_field_size: tuple[tuple[FieldSize, OwnershipPercent], ...] = ()

@@ -42,7 +42,7 @@ builds the foundation they need, so none of its tickets cover one yet.
 | `FEAT-001` | Solver benchmark spike | M0 | Complete | Reference files | — | [#3](https://github.com/colereschke/leverage/pull/3) | — |
 | `FEAT-002` | Domain model for slates, players and lineups | M0 | In progress | — | — | [#4](https://github.com/colereschke/leverage/pull/4) | Review draft PR |
 | `FEAT-003` | DK salary file importer | M0 | In progress | `FEAT-002`, reference files | — | [#5](https://github.com/colereschke/leverage/pull/5) | Review draft PR |
-| `FEAT-004` | Projection importer with the import policy | M0 | Planned | `FEAT-003`, `FEAT-005` | — | — | — |
+| `FEAT-004` | Projection importer with the import policy | M0 | In progress | `FEAT-003`, `FEAT-005` | — | — | Branch `feat-004-projection-importer`; fixture test waits on `FEAT-005` |
 | `FEAT-005` | Synthetic reference fixture | M0 | Planned | `FEAT-003` | — | — | — |
 | `FEAT-006` | Independent lineup validator | M0 | Planned | `FEAT-002`, `FEAT-005` | — | — | — |
 
