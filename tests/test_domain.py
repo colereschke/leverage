@@ -185,7 +185,23 @@ def test_projection_rejects_invalid_ownership() -> None:
             floor=5,
             ceiling=20,
             imported_at=datetime.now(UTC),
-            ownership_by_field_size=((100, 101.0),),
+            ownership_by_field_size=(("small", 101.0),),
+        )
+
+
+@pytest.mark.parametrize("field_size", [100, "medium"])
+def test_projection_rejects_unknown_field_size(field_size: object) -> None:
+    with pytest.raises(ValidationError):
+        Projection.model_validate(
+            {
+                "player_id": "44556892",
+                "source": "synthetic",
+                "proj": 10,
+                "floor": 5,
+                "ceiling": 20,
+                "imported_at": datetime.now(UTC),
+                "ownership_by_field_size": ((field_size, 12.5),),
+            }
         )
 
 
@@ -221,7 +237,7 @@ def test_all_domain_records_construct_with_valid_data() -> None:
         floor=10,
         ceiling=30,
         imported_at=datetime.now(UTC),
-        ownership_by_field_size=((100, 12.5),),
+        ownership_by_field_size=(("small", 12.5),),
     )
     lineup = Lineup(
         build_id="build-1",
@@ -234,7 +250,7 @@ def test_all_domain_records_construct_with_valid_data() -> None:
     portfolio = Portfolio(name="Cash", contest_type="cash", lineups=(lineup,), target_size=1)
 
     assert slate.games[0].id == "BUF@MIA"
-    assert projection.ownership_by_field_size == ((100, 12.5),)
+    assert projection.ownership_by_field_size == (("small", 12.5),)
     assert portfolio.lineups[0].slots[0].player_id == player.dk_id
 
 
