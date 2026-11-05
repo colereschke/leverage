@@ -131,6 +131,12 @@ class ParsedRow:
         # Not the row number: ETR re-issues files, and a shifted row must not match a resolution.
         return f"{self.name}|{self.team}|{self.position}|{self.salary}"
 
+    def resolution_key(self, resolved: dict[str, str | None]) -> str | None:
+        # The row key is for rows identical in key alone. It embeds the key, so a shifted row
+        # that lands on another player's row number misses it and stays blocked.
+        row_key = f"{self.key}|row {self.row}"
+        return next((key for key in (row_key, self.key) if key in resolved), None)
+
     @property
     def report_row(self) -> ReportRow:
         return ReportRow(row=self.row, name=self.name, team=self.team)
@@ -262,7 +268,8 @@ def import_projections(
     The resolutions file is a JSON object of "name|team|position|salary" to a DK ID, or to null to
     ignore the row. Team and position are normalized (LAR, DST) and salary is a plain integer.
     Naming a row also marks its team mismatch as reviewed. DK IDs change per slate, so a
-    resolution file belongs to one slate. Rows identical in all four stay blocked.
+    resolution file belongs to one slate. Rows identical in all four need a row-specific key,
+    "name|team|position|salary|row N", with N the file line; it wins over the plain key.
     """
     rows = read_rows(path, columns, imported_at)
     resolved: dict[str, str | None] = {}
@@ -278,8 +285,9 @@ def import_projections(
     ignored: list[ParsedRow] = []
     claims: dict[str, list[ParsedRow]] = {}
     for row in rows:
-        if row.key in resolved:
-            target = resolved[row.key]
+        key = row.resolution_key(resolved)
+        if key is not None:
+            target = resolved[key]
             if target is None:
                 ignored.append(row)
                 continue
@@ -308,7 +316,8 @@ def import_projections(
         row = claimed[0]
         found = find_mismatches(row, slate.players[dk_id])
         mismatches.extend(found)
-        if any(entry.attribute == "team" for entry in found) and row.key not in resolved:
+        reviewed = row.resolution_key(resolved) is not None
+        if any(entry.attribute == "team" for entry in found) and not reviewed:
             blocked.append(dk_id)
         else:
             projections.append(row.projection.model_copy(update={"player_id": dk_id}))

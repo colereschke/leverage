@@ -250,6 +250,75 @@ def test_identical_rows_stay_blocked_despite_a_resolution(tmp_path: Path) -> Non
         )
 
 
+def test_row_key_resolves_identical_rows_to_different_players(tmp_path: Path) -> None:
+    target = slate(player("1", "Ann Lee"), player("2", "Ann Lee"))
+    rows = [etr_row("Ann Lee", floor="1.0"), etr_row("Ann Lee", floor="2.0")]
+    resolutions: dict[str, str | None] = {
+        "Ann Lee|AAA|WR|5000|row 2": "1",
+        "Ann Lee|AAA|WR|5000|row 3": "2",
+    }
+
+    result = run(tmp_path, target, rows, resolutions=resolutions)
+
+    floors = {projection.player_id: projection.floor for projection in result.projections}
+    assert floors == {"1": 1.0, "2": 2.0}
+
+
+def test_row_key_ignores_one_of_two_identical_rows(tmp_path: Path) -> None:
+    target = slate(player("1", "Ann Lee"))
+    rows = [etr_row("Ann Lee", floor="1.0"), etr_row("Ann Lee", floor="2.0")]
+    resolutions: dict[str, str | None] = {
+        "Ann Lee|AAA|WR|5000|row 2": None,
+        "Ann Lee|AAA|WR|5000|row 3": "1",
+    }
+
+    result = run(tmp_path, target, rows, resolutions=resolutions)
+
+    assert [projection.floor for projection in result.projections] == [2.0]
+    assert [row.row for row in result.report.ignored] == [2]
+
+
+def test_row_key_takes_priority_over_the_stable_key(tmp_path: Path) -> None:
+    target = slate(player("1", "Ann Lee"), player("2", "Ann Lee"))
+    resolutions: dict[str, str | None] = {
+        "Ann Lee|AAA|WR|5000": "1",
+        "Ann Lee|AAA|WR|5000|row 3": "2",
+    }
+
+    result = run(
+        tmp_path, target, [etr_row("Ann Lee"), etr_row("Ann Lee")], resolutions=resolutions
+    )
+
+    assert {projection.player_id for projection in result.projections} == {"1", "2"}
+
+
+def test_shifted_rows_miss_their_row_keys_and_stay_blocked(tmp_path: Path) -> None:
+    target = slate(player("1", "Ann Lee"), player("2", "Ann Lee"), player("3", "Bo Ray"))
+    rows = [etr_row("Bo Ray", "3"), etr_row("Ann Lee"), etr_row("Ann Lee")]
+    resolutions: dict[str, str | None] = {
+        "Ann Lee|AAA|WR|5000|row 2": "1",
+        "Ann Lee|AAA|WR|5000|row 3": "2",
+    }
+
+    with pytest.raises(AmbiguousMatchError) as error:
+        run(tmp_path, target, rows, resolutions=resolutions)
+
+    assert [row.row for row in error.value.report.ambiguous] == [4]
+
+
+def test_row_key_marks_a_team_mismatch_reviewed(tmp_path: Path) -> None:
+    target = slate(player("1", "Ann Lee"))
+
+    result = run(
+        tmp_path,
+        target,
+        [etr_row("Ann Lee", "1", team="BBB")],
+        resolutions={"Ann Lee|BBB|WR|5000|row 2": "1"},
+    )
+
+    assert result.report.blocked == ()
+
+
 def test_resolution_to_null_ignores_a_row_and_lists_it(tmp_path: Path) -> None:
     target = slate(player("1", "Ann Lee Jr."))
 

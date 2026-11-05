@@ -115,6 +115,8 @@ and a portfolio only ever picks one of them.
 **Alternatives considered:** Clamping floors to 0 alters source data. A global list of team
 aliases was skipped: only `LA` has been seen, and any other difference shows up in the report.
 Integer entry counts as ownership keys would be invented numbers that look real. Row numbers as
-resolution keys would silently match the wrong player when a re-issued file shifts its rows, so
-resolutions key on name, team, position and salary.
+the main resolution key would silently match the wrong player when a re-issued file shifts its
+rows, so resolutions key on name, team, position and salary. Rows identical in all four use that
+key plus the row number; a shift then leaves them blocked, though swapping two such rows can't
+be detected.
 **Status:** Active
