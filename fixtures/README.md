@@ -13,6 +13,17 @@ Real slates used as regression fixtures. Each slate gets its own directory, name
 
 The reference slate is `2026-w08-main/` (11 games, 562 DK players). Add slates over time.
 
+Regenerate its synthetic projections from the committed DK salary file with:
+
+```bash
+uv run python scripts/generate_synthetic_projections.py \
+  fixtures/2026-w08-main/DKSalaries.csv \
+  fixtures/2026-w08-main/projections.csv --seed 5
+```
+
+The generator reads only the DK file. The two ownership columns each sum to about 900%, or one
+nine-player lineup's worth of ownership.
+
 **ETR projections never go in this directory.** They are paid data and this repo may be public.
 The real ETR files live in the gitignored `data/` directory, e.g.
 `data/2026-w08-main/etr.csv`. Tests that run on real ETR data (the exact max-projection check, and
