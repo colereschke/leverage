@@ -45,7 +45,12 @@ test: ## Run tests
 	$(UV_RUN) pytest
 
 .PHONY: check
-check: typecheck lint format-check test ## Run all checks (typecheck, lint, format, test)
+check: typecheck lint format-check test agents-check ## Run all checks (typecheck, lint, format, test)
+
+.PHONY: agents-check
+agents-check: ## Fail unless AGENTS.md is a symlink to CLAUDE.md
+	@test "$$(readlink AGENTS.md)" = CLAUDE.md || \
+		{ echo "AGENTS.md must be a symlink to CLAUDE.md (ln -sf CLAUDE.md AGENTS.md)"; exit 1; }
 
 # ── Help ──────────────────────────────────────────────────────────────────────
 

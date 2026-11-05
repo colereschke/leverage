@@ -1,5 +1,8 @@
 # Leverage — Claude Context
 
+`AGENTS.md` is a symlink to this file, so Codex and other agents read the same instructions. Edit
+`CLAUDE.md` only; `make check` fails if the symlink is replaced by a copy.
+
 DraftKings NFL Classic lineup optimizer for one serious player: 1 cash lineup and a 6–20 entry GPP
 portfolio each week. It turns rules usually applied by hand into a tested engine: QB stacks, conditional group rules, portfolio exposure targets, late swap, and DK export.
 The owner (Cole) has deep Python experience and no Kotlin.
