@@ -88,14 +88,19 @@ def read_dk_salaries(path: Path, slate_id: str, week: int) -> Slate:
     # utf-8-sig because DK files start with a BOM, which would corrupt the first column name.
     with path.open(encoding="utf-8-sig", newline="") as source:
         reader = csv.DictReader(source)
-        missing = [column for column in COLUMNS if column not in (reader.fieldnames or ())]
+        columns = reader.fieldnames or ()
+        # DictReader keeps only the last value of a repeated column, losing the others silently.
+        duplicates = sorted({column for column in columns if columns.count(column) > 1})
+        if duplicates:
+            raise SalaryFileError(1, f"duplicate columns: {', '.join(duplicates)}")
+        missing = [column for column in COLUMNS if column not in columns]
         if missing:
             raise SalaryFileError(1, f"missing columns: {', '.join(missing)}")
 
         for row in reader:
             try:
                 if None in row or None in row.values():
-                    raise ValueError(f"expected {len(reader.fieldnames or ())} columns")
+                    raise ValueError(f"expected {len(columns)} columns")
                 game = parse_game(row["Game Info"].strip())
                 if games.setdefault(game.id, game) != game:
                     raise ValueError(f"conflicting kickoff for {game.id}")
@@ -105,6 +110,9 @@ def read_dk_salaries(path: Path, slate_id: str, week: int) -> Slate:
                 players[player.dk_id] = player
             except ValueError as exc:
                 raise SalaryFileError(reader.line_num, str(exc)) from exc
+
+    if not players:
+        raise SalaryFileError(1, "empty file: no player rows")
 
     return Slate(
         id=slate_id,

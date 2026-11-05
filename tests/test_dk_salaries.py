@@ -120,3 +120,16 @@ def test_missing_column_fails_on_the_header_row(tmp_path: Path) -> None:
     with pytest.raises(SalaryFileError, match="TeamAbbrev") as caught:
         import_file(write_salaries(tmp_path, header, GOOD_ROW))
     assert caught.value.row == 1
+
+
+def test_duplicate_column_fails_on_the_header_row(tmp_path: Path) -> None:
+    path = write_salaries(tmp_path, f"{HEADER},Salary", f"{GOOD_ROW},9000")
+    with pytest.raises(SalaryFileError, match="duplicate columns: Salary") as caught:
+        import_file(path)
+    assert caught.value.row == 1
+
+
+def test_header_only_file_fails_on_the_header_row(tmp_path: Path) -> None:
+    with pytest.raises(SalaryFileError, match="empty file") as caught:
+        import_file(write_salaries(tmp_path, HEADER))
+    assert caught.value.row == 1
