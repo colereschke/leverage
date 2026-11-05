@@ -44,7 +44,7 @@ builds the foundation they need, so none of its tickets cover one yet.
 | `FEAT-003` | DK salary file importer | M0 | In progress | `FEAT-002`, reference files | — | [#5](https://github.com/colereschke/leverage/pull/5) | Review draft PR |
 | `FEAT-004` | Projection importer with the import policy | M0 | In progress | `FEAT-003`, `FEAT-005` | — | [#7](https://github.com/colereschke/leverage/pull/7) | Fixture test waits on `FEAT-005` |
 | `FEAT-005` | Synthetic reference fixture | M0 | In progress | `FEAT-003` | — | [#6](https://github.com/colereschke/leverage/pull/6) | Review draft PR |
-| `FEAT-006` | Independent lineup validator | M0 | Planned | `FEAT-002`, `FEAT-005` | — | — | — |
+| `FEAT-006` | Independent lineup validator | M0 | In progress | `FEAT-002`, `FEAT-005` | — | — | Open PR |
 
 ## M0 gate
 
