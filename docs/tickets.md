@@ -59,7 +59,7 @@ the models properly.
 
 **Required tests:** none; the results are the deliverable.
 
-**Outcome:**
+**Outcome:** Draft PR #3 — benchmarked both solvers at 6/20 lineups and 1/2/8 cores; retained the provisional 8-core CP-SAT joint-worker choice.
 
 ### FEAT-002 - Domain model for slates, players and lineups
 
