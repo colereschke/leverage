@@ -1,4 +1,7 @@
+import operator
+from collections.abc import MutableMapping
 from datetime import UTC, datetime, timedelta, timezone
+from typing import cast
 
 import pytest
 from pydantic import ValidationError
@@ -66,7 +69,62 @@ def test_game_normalizes_aware_kickoff_to_utc_and_rejects_naive() -> None:
 
 def test_slate_requires_a_game_and_positive_week() -> None:
     with pytest.raises(ValidationError):
-        Slate(id="main", site="DraftKings", roster_format=DK_CLASSIC, week=0, games=())
+        Slate(id="main", site="DraftKings", roster_format=DK_CLASSIC, week=0, games=(), players={})
+
+
+def test_slate_keeps_players_keyed_by_dk_id_without_mutable_source_data() -> None:
+    game = Game(
+        id="BUF@MIA", away_team="BUF", home_team="MIA", kickoff=datetime(2026, 9, 13, tzinfo=UTC)
+    )
+    player = Player(
+        dk_id="44556892",
+        name="Quarterback",
+        positions=frozenset({"QB"}),
+        team="BUF",
+        opponent="MIA",
+        game_id=game.id,
+        salary=7000,
+    )
+    source = {player.dk_id: player}
+    slate = Slate(
+        id="main",
+        site="DraftKings",
+        roster_format=DK_CLASSIC,
+        week=1,
+        games=(game,),
+        players=source,
+    )
+
+    assert slate.players["44556892"] == player
+    source.clear()
+    assert slate.players["44556892"] == player
+    assert slate.model_dump()["players"]["44556892"]["dk_id"] == "44556892"
+    with pytest.raises(TypeError):
+        operator.setitem(cast(MutableMapping[str, Player], slate.players), "44556892", player)
+
+
+def test_slate_rejects_player_key_that_disagrees_with_dk_id() -> None:
+    game = Game(
+        id="BUF@MIA", away_team="BUF", home_team="MIA", kickoff=datetime(2026, 9, 13, tzinfo=UTC)
+    )
+    player = Player(
+        dk_id="44556892",
+        name="Quarterback",
+        positions=frozenset({"QB"}),
+        team="BUF",
+        opponent="MIA",
+        game_id=game.id,
+        salary=7000,
+    )
+    with pytest.raises(ValidationError):
+        Slate(
+            id="main",
+            site="DraftKings",
+            roster_format=DK_CLASSIC,
+            week=1,
+            games=(game,),
+            players={"wrong-id": player},
+        )
 
 
 def test_player_uses_dk_id_and_rejects_empty_positions() -> None:
@@ -90,6 +148,20 @@ def test_player_uses_dk_id_and_rejects_empty_positions() -> None:
             game_id="BUF@MIA",
             salary=7000,
         )
+
+
+def test_player_keeps_salary_file_injury_status() -> None:
+    player = Player(
+        dk_id="44556892",
+        name="Quarterback",
+        positions=frozenset({"QB"}),
+        team="BUF",
+        opponent="MIA",
+        game_id="BUF@MIA",
+        salary=7000,
+        injury_status="Q",
+    )
+    assert player.injury_status == "Q"
 
 
 def test_projection_rejects_negative_points() -> None:
@@ -130,6 +202,7 @@ def test_all_domain_records_construct_with_valid_data() -> None:
         roster_format=DK_CLASSIC,
         week=1,
         games=(game,),
+        players={},
         source_files=("salary.csv",),
     )
     player = Player(

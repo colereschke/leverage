@@ -1,9 +1,19 @@
 """Immutable source data and lineup records for a slate."""
 
+from collections.abc import Mapping
 from datetime import UTC, datetime
+from types import MappingProxyType
 from typing import Annotated, Literal
 
-from pydantic import AwareDatetime, BaseModel, ConfigDict, Field, field_validator, model_validator
+from pydantic import (
+    AwareDatetime,
+    BaseModel,
+    ConfigDict,
+    Field,
+    field_serializer,
+    field_validator,
+    model_validator,
+)
 
 Position = Literal["QB", "RB", "WR", "TE", "DST"]
 ContestType = Literal["cash", "gpp"]
@@ -66,15 +76,6 @@ class Game(DomainModel):
         return value.astimezone(UTC)
 
 
-class Slate(DomainModel):
-    id: NonEmptyStr
-    site: NonEmptyStr
-    roster_format: RosterFormat
-    week: int = Field(gt=0)
-    games: tuple[Game, ...] = Field(min_length=1)
-    source_files: tuple[NonEmptyStr, ...] = ()
-
-
 class Player(DomainModel):
     dk_id: NonEmptyStr
     name: NonEmptyStr
@@ -83,6 +84,28 @@ class Player(DomainModel):
     opponent: NonEmptyStr
     game_id: NonEmptyStr
     salary: int = Field(gt=0)
+    injury_status: str = ""
+
+
+class Slate(DomainModel):
+    id: NonEmptyStr
+    site: NonEmptyStr
+    roster_format: RosterFormat
+    week: int = Field(gt=0)
+    games: tuple[Game, ...] = Field(min_length=1)
+    players: Mapping[str, Player]
+    source_files: tuple[NonEmptyStr, ...] = ()
+
+    @field_validator("players")
+    @classmethod
+    def player_ids_match_keys(cls, value: Mapping[str, Player]) -> Mapping[str, Player]:
+        if any(player.dk_id != dk_id for dk_id, player in value.items()):
+            raise ValueError("player keys must match DK IDs")
+        return MappingProxyType(dict(value))
+
+    @field_serializer("players")
+    def serialize_players(self, value: Mapping[str, Player]) -> dict[str, Player]:
+        return dict(value)
 
 
 class Projection(DomainModel):

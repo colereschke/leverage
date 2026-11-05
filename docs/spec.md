@@ -63,9 +63,9 @@ Workspace so the original projections are never edited in place.
 | Entity | Key fields | Notes |
 | --- | --- | --- |
 | Site / RosterFormat | slots, eligibility per slot, salary cap | DraftKings Classic = QB, RB×2, WR×3, TE, FLEX (RB/WR/TE), DST; $50,000. Data, not code |
-| Slate | id, site, format, week, games, created from which files | One per contest slate (e.g. a week's Main slate) |
+| Slate | id, site, format, week, games, players keyed by DK ID, created from which files | One per contest slate (e.g. a week's Main slate); source data is immutable |
 | Game | id, away team, home team, kickoff (UTC) | Drives late swap and FLEX placement |
-| Player | dk_id, name, position(s), team, opponent, game, salary | From the DK salary file; dk_id is the stable key |
+| Player | dk_id, name, position(s), team, opponent, game, salary, injury status | From the DK salary file; dk_id is the stable key and status preserves the source value |
 | Projection | player, source (ETR), proj, floor, ceiling, ownership by field size, imported_at | Several sources per slate allowed; one is active |
 | Workspace | slate, active projection source, settings | Your working copy for a slate |
 | PlayerOverride | player, proj, lock, ban, min/max exposure, only-in-stack, source, status | R1, R2, R9, R13 |
