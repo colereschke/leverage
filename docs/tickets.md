@@ -132,7 +132,7 @@ mapping file passed to the importer; storing them comes with the Workspace (M1).
 **Required tests:** one test per policy case on small hand-written CSVs; the synthetic reference
 projections import with an empty report. Policy-case tests are part of the M0 gate.
 
-**Outcome:**
+**Outcome:** [PR #7](https://github.com/colereschke/leverage/pull/7) — `import_projections` with ETR and generic presets, a test per policy case, and an empty report on the synthetic reference.
 
 ### FEAT-005 - Synthetic reference fixture
 
@@ -180,4 +180,4 @@ checks are added in M1 and M2 as those settings land.
 **Required tests:** the valid and invalid sets (the other half of the M0 gate); an import-boundary
 test that enforces the no-solver rule.
 
-**Outcome:** [Draft PR #8](https://github.com/colereschke/leverage/pull/8) — `validate_lineup` returns every core-constraint violation, with hand-built valid and invalid sets on the reference slate and import-boundary tests.
+**Outcome:** [PR #8](https://github.com/colereschke/leverage/pull/8) — `validate_lineup` returns every core-constraint violation, with hand-built valid and invalid sets on the reference slate and import-boundary tests.

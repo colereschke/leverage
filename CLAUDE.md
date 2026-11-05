@@ -26,13 +26,14 @@ uv run lev --help # the CLI
 
 - **Python 3.12**, managed with **uv** (`uv add`, `uv run`; never pip directly). `uv.lock` is committed.
 - **Typer** for the `lev` CLI (`src/leverage/cli.py`)
+- **pydantic v2** for the domain models (`src/leverage/domain/`)
 - **pytest** for tests; **mypy** strict; **ruff** for lint and format (100-char lines)
 - Pre-commit hook in `.githooks/pre-commit` (enabled by `make hooks`): ruff format check, ruff lint, mypy
 - CI: GitHub Actions runs `make check` on every PR and push to main
 
 Planned, per the spec — add each when the milestone that needs it starts, not before:
-pydantic v2 (domain), highspy and OR-Tools CP-SAT (solvers), pandas (CSV mapping), Hypothesis
-(property tests), FastAPI + Postgres (API, M3), React + TypeScript in `web/` (M3).
+highspy and OR-Tools CP-SAT (solvers; today only in the `bench` dependency group), pandas (CSV
+mapping), Hypothesis (property tests), FastAPI + Postgres (API, M3), React + TypeScript in `web/` (M3).
 
 ## Project Structure
 
@@ -54,7 +55,7 @@ docs/tickets.md   # ticket detail: scope, acceptance criteria, required tests
 docs/DECISIONS.md # why non-obvious choices were made
 ```
 
-The subpackages are empty stubs until their milestone starts.
+`rules/`, `model/`, `solvers/` and `swap/` are empty stubs until their milestone starts.
 
 ## Engine Rules (from the spec)
 
@@ -70,7 +71,7 @@ The subpackages are empty stubs until their milestone starts.
   invalid), defined in the spec's Build outcomes. Never present a missed target or timeout as a
   valid portfolio.
 - **Solver split:** HiGHS for single lineups, sequential mode and late swap; CP-SAT for joint
-  portfolio builds. Provisional until the M0 benchmark; see `docs/DECISIONS.md`.
+  portfolio builds. Provisional until the M2 production model benchmark; see `docs/DECISIONS.md`.
 
 ## Data Rules
 
@@ -99,8 +100,8 @@ dependencies; [`docs/tickets.md`](docs/tickets.md) has scope, acceptance criteri
 tests, plus the per-ticket workflow. Pick a Ready ticket, and in its PR update its row and outcome.
 IDs: `FEAT-` (product and engine), `HARD-` (review and audit fixes), `OPS-` (tooling, CI, deploy).
 
-Current milestone: M0 Foundations (`FEAT-001`–`FEAT-006`). The real-data checks are M1 local
-acceptance tests.
+M0 Foundations is closed. Current milestone: M1 Engine + CLI, not yet ticketed; its scope is under
+"Not yet ticketed" in the tracker. The real-data checks are M1 local acceptance tests.
 
 ## Repo Rules
 

@@ -23,12 +23,12 @@ Numbers are never reused. A ticket keeps its ID if it moves to another milestone
 
 ## Current snapshot
 
-- Milestone: M0 Foundations. FEAT-001 through FEAT-005 are complete; FEAT-006 is in review.
+- Milestone: M0 Foundations is closed. M1 Engine + CLI is next and isn't ticketed yet.
 - Reference slate: 2026 Week 8 main. `fixtures/2026-w08-main/DKSalaries.csv` is committed; the ETR
   export lives in `data/2026-w08-main/etr.csv` (gitignored, never committed).
 - Still needed from the owner before M1: the rules behind the Week 8 GPP portfolio, for the
   reference `rules.json`.
-- Open Dependabot PRs: #1 (setup-uv 9 → 10), #2 (uv-build < 0.14).
+- Open Dependabot PRs: none.
 
 ## Master ticket table
 
@@ -44,12 +44,14 @@ builds the foundation they need, so none of its tickets cover one yet.
 | `FEAT-003` | DK salary file importer | M0 | Complete | `FEAT-002`, reference files | — | [#5](https://github.com/colereschke/leverage/pull/5) | — |
 | `FEAT-004` | Projection importer with the import policy | M0 | Complete | `FEAT-003`, `FEAT-005` | — | [#7](https://github.com/colereschke/leverage/pull/7) | — |
 | `FEAT-005` | Synthetic reference fixture | M0 | Complete | `FEAT-003` | — | [#6](https://github.com/colereschke/leverage/pull/6) | — |
-| `FEAT-006` | Independent lineup validator | M0 | In progress | `FEAT-002`, `FEAT-005` | — | [#8](https://github.com/colereschke/leverage/pull/8) | Review draft PR |
+| `FEAT-006` | Independent lineup validator | M0 | Complete | `FEAT-002`, `FEAT-005` | — | [#8](https://github.com/colereschke/leverage/pull/8) | — |
 
 ## M0 gate
 
 M0 closes when `FEAT-003`, `FEAT-004` and `FEAT-006` pass the spec's M0 test in CI and `FEAT-001`
 has recorded its results in `docs/DECISIONS.md`.
+
+Closed 2026-11-04: both conditions met, with CI green on `main` at `9ce5e37`.
 
 ## Not yet ticketed
 
