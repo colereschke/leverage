@@ -155,7 +155,7 @@ in M1.
 
 **Required tests:** determinism (regenerate and compare); the value invariants above.
 
-**Outcome:**
+**Outcome:** [Draft PR #6](https://github.com/colereschke/leverage/pull/6) — seeded DK-only generator and ETR-shaped CSV for all 562 reference players, with determinism and value-invariant tests.
 
 ### FEAT-006 - Independent lineup validator
 
