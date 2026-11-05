@@ -104,7 +104,8 @@ commits the reference slate's salary file to `fixtures/2026-w08-main/DKSalaries.
 **Required tests:** the reference file imports every row and spot-checks known players, games and
 kickoffs (this is half of the M0 gate); a small malformed file fails with a row-specific error.
 
-**Outcome:**
+**Outcome:** [Draft PR #5](https://github.com/colereschke/leverage/pull/5) — `read_dk_salaries` in
+`src/leverage/io/dk_salaries.py` imports all 562 reference rows and 11 games, and fails on the first malformed row with its file line number and reason.
 
 ### FEAT-004 - Projection importer with the import policy
 
