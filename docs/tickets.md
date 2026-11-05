@@ -180,4 +180,4 @@ checks are added in M1 and M2 as those settings land.
 **Required tests:** the valid and invalid sets (the other half of the M0 gate); an import-boundary
 test that enforces the no-solver rule.
 
-**Outcome:**
+**Outcome:** [Draft PR #8](https://github.com/colereschke/leverage/pull/8) — `validate_lineup` returns every core-constraint violation, with hand-built valid and invalid sets on the reference slate and import-boundary tests.
