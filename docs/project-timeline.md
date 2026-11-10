@@ -23,11 +23,12 @@ Numbers are never reused. A ticket keeps its ID if it moves to another milestone
 
 ## Current snapshot
 
-- Milestone: M0 Foundations is closed. M1 Engine + CLI is next and isn't ticketed yet.
+- Milestone: M1 Engine + CLI. M0 Foundations closed 2026-11-04. M1 is ticketed in full; M2 and M3
+  have outline tickets.
 - Reference slate: 2026 Week 8 main. `fixtures/2026-w08-main/DKSalaries.csv` is committed; the ETR
   export lives in `data/2026-w08-main/etr.csv` (gitignored, never committed).
-- Still needed from the owner before M1: the rules behind the Week 8 GPP portfolio, for the
-  reference `rules.json`.
+- The owner's Week 8 notes are in hand; the reference `rules.json` is written from them in M1 and
+  kept in the gitignored `data/`.
 - Open Dependabot PRs: none.
 
 ## Master ticket table
@@ -45,6 +46,29 @@ builds the foundation they need, so none of its tickets cover one yet.
 | `FEAT-004` | Projection importer with the import policy | M0 | Complete | `FEAT-003`, `FEAT-005` | — | [#7](https://github.com/colereschke/leverage/pull/7) | — |
 | `FEAT-005` | Synthetic reference fixture | M0 | Complete | `FEAT-003` | — | [#6](https://github.com/colereschke/leverage/pull/6) | — |
 | `FEAT-006` | Independent lineup validator | M0 | Complete | `FEAT-002`, `FEAT-005` | — | [#8](https://github.com/colereschke/leverage/pull/8) | — |
+| `FEAT-007` | Exact reference check | M1 | Ready | — | — | — | Branch `feat-007-exact-reference-check` |
+| `FEAT-008` | Domain model for build configs, builds and groups | M1 | Ready | — | — | — | Branch `feat-008-domain-configs-groups` |
+| `FEAT-009` | JSON storage | M1 | Planned | `FEAT-008` | — | — | — |
+| `FEAT-010` | Single-lineup model on HiGHS | M1 | Planned | `FEAT-007`, `FEAT-008` | R13, R15 | — | — |
+| `FEAT-011` | FLEX slot assignment | M1 | Planned | `FEAT-010` | R11 | — | — |
+| `FEAT-012` | Rule document schema | M1 | Planned | `FEAT-008` | — | — | — |
+| `FEAT-013` | Per-lineup rules | M1 | Planned | `FEAT-010`, `FEAT-012` | R3–R6, R8, R9 | — | — |
+| `FEAT-014` | Sequential builds and build outcomes | M1 | Planned | `FEAT-009`, `FEAT-013` | R1, R2 | — | — |
+| `FEAT-015` | Cross-lineup rules | M1 | Planned | `FEAT-014` | R7, R10 | — | — |
+| `FEAT-016` | Groups and the exposure view | M1 | Planned | `FEAT-009`, `FEAT-014` | R2 | — | — |
+| `FEAT-017` | Projection re-import report | M1 | Planned | `FEAT-009` | R13 | — | — |
+| `FEAT-018` | DK upload and text export | M1 | Planned | `FEAT-011`, `FEAT-016` | — | — | — |
+| `FEAT-019` | `lev` CLI for the M1 workflow | M1 | Planned | `FEAT-015`, `FEAT-017`, `FEAT-018` | — | — | — |
+| `FEAT-020` | M1 acceptance checks | M1 | Planned | `FEAT-019` | — | — | — |
+| `FEAT-021` | DK entries import | M2 | Planned | M1 | — | — | — |
+| `FEAT-022` | Late swap | M2 | Planned | `FEAT-021` | R12 | — | — |
+| `FEAT-023` | Repair and planned swaps | M2 | Planned | `FEAT-022` | R12 | — | — |
+| `FEAT-024` | Conflict diagnosis and rule cost | M2 | Planned | M1 | — | — | — |
+| `FEAT-025` | API, build jobs and Postgres storage | M3 | Planned | M2 | — | — | — |
+| `FEAT-026` | Owner-only access | M3 | Planned | `FEAT-025` | — | — | — |
+| `FEAT-027` | Web UI | M3 | Planned | `FEAT-026` | — | — | — |
+| `FEAT-028` | Lineup editor and build diff | M3 | Planned | `FEAT-027` | R16 | — | — |
+| `OPS-002` | Hosted deploy | M3 | Planned | `FEAT-026` | — | — | — |
 
 ## M0 gate
 
@@ -53,33 +77,31 @@ has recorded its results in `docs/DECISIONS.md`.
 
 Closed 2026-11-04: both conditions met, with CI green on `main` at `9ce5e37`.
 
-## Not yet ticketed
+## M1 gate
 
-Each milestone's tickets are written when the milestone before it is close to done, since earlier
-results (especially the M0 benchmark) can change them.
+M1 closes when `FEAT-020` passes: synthetic builds match recorded results in CI, `FEAT-007` agrees
+with the optimizer (CI and locally), rule types match brute-force enumeration, the Week 8 pool is
+validated with every disagreement reviewed, and a 30-lineup real-data build meets N1.
 
-- **M1 Engine + CLI:** lineup model on HiGHS with the projection/ceiling blend (R15); projection
-  overrides (R13); FLEX slot assignment (R11); rule document schema and compiler for stack and
-  group rules (R3–R6, R8, R9); sequential portfolios with exposure (R1, R2); build outcomes;
-  projection re-import report; DK upload export with the pre-export review; exact reference check
-  (max-projection DP) and brute-force rule tests; local acceptance test rebuilding the reference
-  portfolio on real ETR data.
-- **M2 Portfolio + swap:** joint model on CP-SAT (R14); pair limits (R7) and allowViolations
-  scopes (R10); correlated exposure; late swap + DK entries (R12); infeasibility report.
-- **M3 API + web UI:** saved, diffable build history (R16); the rest per the spec. Expect the first
-  `OPS-` deploy and `HARD-` review tickets here.
+## Outline tickets
+
+M2 and M3 tickets are outlines. Their acceptance criteria and required tests are firmed up when
+the milestone before them is close to done, since earlier results can change them.
 
 ## Dependency view
 
 ```text
-Reference files (owner) ──┬───────────────────────── FEAT-001 benchmark spike
-                          │
-FEAT-002 domain model ────┴── FEAT-003 DK importer ── FEAT-005 synthetic fixture
-                                                          ├── FEAT-004 projection importer
-                                                          └── FEAT-006 validator (+ FEAT-002)
+FEAT-007 reference check ──┐
+FEAT-008 domain ───────────┼── FEAT-010 lineup model ── FEAT-011 FLEX ──────────────┐
+   ├── FEAT-012 rule schema┴── FEAT-013 per-lineup rules ──┐                         │
+   └── FEAT-009 storage ───────────────────────────────────┴─ FEAT-014 sequential ──┤
+          └── FEAT-017 re-import                     FEAT-015 cross-lineup ──┐       │
+                                                     FEAT-016 groups ────────┼─ FEAT-018 export
+                                                                             └─ FEAT-019 CLI ── FEAT-020
 ```
 
-`FEAT-001` is a throwaway script with its own rough parsing, so it doesn't wait for the importers.
+`FEAT-007`, `FEAT-008`, `FEAT-012` and `FEAT-017` can run alongside the model work once their own
+dependencies land.
 
 ## Maintenance rules
 
