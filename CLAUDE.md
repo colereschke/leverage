@@ -4,7 +4,7 @@
 `CLAUDE.md` only; `make check` fails if the symlink is replaced by a copy.
 
 DraftKings NFL Classic lineup optimizer for one serious player: 1 cash lineup and a 6–20 entry GPP
-portfolio each week. It turns rules usually applied by hand into a tested engine: QB stacks, conditional group rules, portfolio exposure targets, late swap, and DK export.
+portfolio each week. It turns rules usually applied by hand into a tested engine: QB stacks, conditional group rules, exposure targets, late swap, and DK export.
 The owner (Cole) has deep Python experience and no Kotlin.
 
 **Source of truth for design:** [`docs/spec.md`](docs/spec.md). Read it before planning engine,
@@ -32,7 +32,7 @@ uv run lev --help # the CLI
 - CI: GitHub Actions runs `make check` on every PR and push to main
 
 Planned, per the spec — add each when the milestone that needs it starts, not before:
-highspy and OR-Tools CP-SAT (solvers; today only in the `bench` dependency group), pandas (CSV
+highspy (solver; today only in the `bench` dependency group, with OR-Tools for the M0 spike), pandas (CSV
 mapping), Hypothesis (property tests), FastAPI + Postgres (API, M3), React + TypeScript in `web/` (M3).
 
 ## Project Structure
@@ -42,8 +42,8 @@ src/leverage/
 ├── cli.py        # Typer app, entry point `lev`
 ├── domain/       # Slate, Player, Game, Projection, Lineup, Portfolio
 ├── rules/        # rule document schema + compiler, one module per rule type
-├── model/        # single-lineup and joint-portfolio model builders (solver-agnostic)
-├── solvers/      # HiGHS and CP-SAT behind one Solver protocol
+├── model/        # lineup model builder (solver-agnostic)
+├── solvers/      # HiGHS behind one Solver protocol
 ├── swap/         # late swap
 ├── io/           # DK salary + entries files, projection mapper, DK upload export
 └── validate.py   # independent validator: plain code, never calls a solver
@@ -61,17 +61,21 @@ docs/DECISIONS.md # why non-obvious choices were made
 
 - **The validator is independent.** It re-checks every lineup before display or export and must not
   share constraint code with the model builders. Most mistakes behind R1–R16 were a rule silently not applied.
-- **Rules are data.** A typed, versioned JSON document per workspace, compiled into constraints.
+- **Describe, generate, choose.** No rule describes one specific lineup. Builds generate lineups,
+  groups save them, and the owner picks entries by hand. Limits count across one build, never
+  across groups.
+- **Rules are data.** A typed, versioned JSON document per build config, compiled into constraints.
   Players are referenced by DraftKings ID, never by name.
-- **`allowViolations: N`** means a rule may be broken in at most N lineups. 0 (default) = every lineup.
+- **`allowViolations: N`** means a per-lineup rule may be broken in at most N lineups of a build.
+  0 (default) = every lineup.
 - **Source data is immutable.** Slates are never edited; overrides, rules and builds hang off a
   Workspace. Overrides and rules carry `source` and `status`; only `approved` items reach a build
   (the hook for the v2 research agent).
-- **Every build ends in one status** (optimal, feasible, targets_missed, infeasible, timed_out,
+- **Every build ends in one status** (complete, targets_missed, partial, infeasible, timed_out,
   invalid), defined in the spec's Build outcomes. Never present a missed target or timeout as a
-  valid portfolio.
-- **Solver split:** HiGHS for single lineups, sequential mode and late swap; CP-SAT for joint
-  portfolio builds. Provisional until the M2 production model benchmark; see `docs/DECISIONS.md`.
+  complete build.
+- **Solver:** HiGHS for everything in v1. Joint portfolio builds (CP-SAT) are deferred past v1;
+  see `docs/DECISIONS.md`.
 
 ## Data Rules
 
@@ -100,8 +104,9 @@ dependencies; [`docs/tickets.md`](docs/tickets.md) has scope, acceptance criteri
 tests, plus the per-ticket workflow. Pick a Ready ticket, and in its PR update its row and outcome.
 IDs: `FEAT-` (product and engine), `HARD-` (review and audit fixes), `OPS-` (tooling, CI, deploy).
 
-M0 Foundations is closed. Current milestone: M1 Engine + CLI, not yet ticketed; its scope is under
-"Not yet ticketed" in the tracker. The real-data checks are M1 local acceptance tests.
+M0 Foundations is closed. Current milestone: M1 Engine + CLI, ticketed as `FEAT-007`–`FEAT-020`;
+`FEAT-007` and `FEAT-008` are Ready. M2 and M3 have outline tickets. The real-data checks are M1
+local acceptance tests (`FEAT-020`).
 
 ## Repo Rules
 

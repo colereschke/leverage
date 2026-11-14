@@ -60,6 +60,70 @@ projections are still ETR's numbers, and heavy noise is no better than synthetic
 
 **Status:** Active
 
+### JSON files until Postgres (M1 planning, 2026-11-06)
+
+**Decision:** The M1 CLI saves workspaces and builds as JSON files in the gitignored `data/`
+directory. Postgres arrives in M3 with the API, or sooner if JSON stops being enough. Postgres is
+the only database, including for local dev and tests.
+
+**Why:** The storage schema will probably change once the API exists, so a database in M1 would
+add a local install and a CI service for a single-user CLI, then need reworking. Going straight
+to Postgres keeps one SQL dialect, and tests run on the same database as production.
+
+**Alternatives considered:** Postgres from M1, rejected for that setup cost. JSON's cost is throwaway save and load code, and saved M1 builds need a one-time import to carry over.
+
+**Status:** Active
+
+## Workflow
+
+### Describe, generate, choose (M1 planning, 2026-11-10)
+
+**Decision:** General rules generate builds of any size (30 is normal). The owner saves lineups to
+named groups and picks entries by hand. Limits count across one build only; groups never block
+anything and show exposure instead. There are no pinned lineups: keep lineups by saving them, then
+build again.
+
+**Why:** The tool is meant to speed up building, not play DFS on autopilot. A rule that describes
+one lineup just reproduces what the owner already pictured; general rules plus a lock show what
+the slate offers, and an absence from a varied build is information. Any player can still be
+locked in.
+
+**Alternatives considered:** Per-lineup "stack plans" (asked for in the Week 8 notes), rejected
+for the reason above. An automatic pick-best-K step, rejected as autopilot. Limits that block a
+group, rejected because a group mixes builds by design. Pinned lineups, rejected because they make
+saved lineups count toward a new build's limits.
+
+**Status:** Active
+
+### Joint portfolio optimization deferred past v1 (M1 planning, 2026-11-10)
+
+**Decision:** v1 builds sequentially on HiGHS. Joint mode (R14), the CP-SAT joint model and the
+8-core build worker are out of v1.
+
+**Why:** A normal build of 30 lineups is beyond the 20 the M0 benchmark tested, and the spec
+already fell back to sequential above 20. With entries picked by hand from a larger build, exact
+exposure hits across the final card matter less, and the build worker is the most expensive piece
+of hosting.
+
+**Alternatives considered:** Keeping joint mode in M2. Rejected for now: it scored about 4 points
+better in the prototype, so revisit if sequential builds disappoint on real slates.
+
+**Status:** Deferred
+
+### Week 8 lineups are a check, not a target (M1 planning, 2026-11-10)
+
+**Decision:** M1's real-data gate validates the 14-lineup Week 8 pool against rules written from
+the owner's Week 8 notes and reviews each disagreement, instead of rebuilding that portfolio.
+
+**Why:** Those lineups came from the owner's second attempt at using a Claude session as an
+optimizer, and only one is confirmed as entered. Matching them would hold the engine to an
+unrefined process.
+
+**Alternatives considered:** Rebuilding the reference portfolio from `rules.json`, the original
+M1 gate.
+
+**Status:** Active
+
 ## Optimizer
 
 ### HiGHS for single lineups, CP-SAT for joint portfolios (FEAT-001, 2026-11-03)
@@ -99,7 +163,8 @@ unproven gaps and single-run timings do not establish a reliable production late
 but CP-SAT was stronger at 20 lineups with 8 workers; keep HiGHS for single lineups and sequential
 builds. Revisit if production model rules or hosting costs change the comparison.
 
-**Status:** Active, provisional until the M2 production model benchmark.
+**Status:** HiGHS choice active. The CP-SAT and build-worker parts are deferred with joint mode;
+see "Joint portfolio optimization deferred past v1".
 
 ## Data import
 
