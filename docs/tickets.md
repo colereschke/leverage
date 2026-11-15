@@ -209,7 +209,7 @@ only (`tests/`), since nothing in production needs it.
 **Required tests:** brute-force agreement on several seeded small pools, including pools where
 the best lineup breaks the 2-games and DST rules; a validator check on its synthetic result.
 
-**Outcome:**
+**Outcome:** `tests/reference.py` `best_lineup` — per-DST knapsack over salary in $100 steps, with an unconstrained pass as an upper bound so only DSTs that could win get the exact pass. Matches brute force on seeded 20-player pools, including pools where the best lineup is one game or faces its DST; the synthetic and real ETR lineups pass the validator.
 
 ### FEAT-008 - Domain model for build configs, builds and groups
 

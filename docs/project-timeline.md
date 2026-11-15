@@ -46,7 +46,7 @@ builds the foundation they need, so none of its tickets cover one yet.
 | `FEAT-004` | Projection importer with the import policy | M0 | Complete | `FEAT-003`, `FEAT-005` | — | [#7](https://github.com/colereschke/leverage/pull/7) | — |
 | `FEAT-005` | Synthetic reference fixture | M0 | Complete | `FEAT-003` | — | [#6](https://github.com/colereschke/leverage/pull/6) | — |
 | `FEAT-006` | Independent lineup validator | M0 | Complete | `FEAT-002`, `FEAT-005` | — | [#8](https://github.com/colereschke/leverage/pull/8) | — |
-| `FEAT-007` | Exact reference check | M1 | Ready | — | — | — | Branch `feat-007-exact-reference-check` |
+| `FEAT-007` | Exact reference check | M1 | In progress | — | — | — | Branch `feat-007-exact-reference-check` |
 | `FEAT-008` | Domain model for build configs, builds and groups | M1 | Ready | — | — | — | Branch `feat-008-domain-configs-groups` |
 | `FEAT-009` | JSON storage | M1 | Planned | `FEAT-008` | — | — | — |
 | `FEAT-010` | Single-lineup model on HiGHS | M1 | Planned | `FEAT-007`, `FEAT-008` | R13, R15 | — | — |
